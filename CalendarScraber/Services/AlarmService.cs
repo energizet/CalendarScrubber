@@ -22,7 +22,10 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 			if (_scheduledEvents.Contains(ev.ItemId.Id)) continue;
 
 			// Пропускаем отмененные
-			if (SettingsManager.OnlyActiveEvents && (ev.IsCancelled || ev.Status == "NoResponseReceived")) continue;
+			if (SettingsManager.OnlyActiveEvents && (ev.IsCancelled
+				    || ev.Status == "NoResponseReceived"
+				    || ev.Status == "Tentative"
+			    )) continue;
 
 			// Вычисляем время, когда должен зазвенеть будильник
 			// LocalStart (10:00) - 15 минут = 09:45
@@ -68,6 +71,7 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 			{
 				if (ev.IsCancelled) continue;
 				if (ev.Status == "NoResponseReceived") continue; // Или ваша логика активного события
+				if (ev.Status == "Tentative") continue; // Или ваша логика активного события
 			}
 
 			// 3. Вычисляем, сколько осталось
