@@ -3,8 +3,51 @@ using Plugin.LocalNotification;
 
 namespace CalendarScraber.Services;
 
-public class AlarmService
+public class AlarmService(ISystemAlarmService systemAlarmService)
 {
+    // Этот список нужен, чтобы не ставить будильник на одно событие 100 раз
+    // Можно хранить ID событий в Preferences, если нужно сохранять между перезапусками
+    private HashSet<string> _scheduledEvents = new HashSet<string>();
+    
+    public void ScheduleSystemAlarms(List<CalendarView> events)
+    {
+        if (!SettingsManager.IsAlarmEnabled) return;
+
+        var now = DateTime.Now; // Локальное время
+        var minutesThreshold = SettingsManager.MinutesBefore; // Например, 15 мин
+
+        foreach (var ev in events)
+        {
+            // Уникальный ID для отслеживания
+            if (_scheduledEvents.Contains(ev.ItemId.Id)) continue;
+            
+            // Пропускаем отмененные
+            if (SettingsManager.OnlyActiveEvents && (ev.IsCancelled || ev.Status == "NoResponseReceived")) continue;
+
+            // Вычисляем время, когда должен зазвенеть будильник
+            // LocalStart (10:00) - 15 минут = 09:45
+            var alarmTime = ev.LocalStart.AddMinutes(-minutesThreshold);
+
+            // Если время будильника уже прошло - пропускаем
+            if (alarmTime < now) continue;
+
+            // Если до будильника осталось больше 24 часов - тоже можно пропустить пока
+            if ((alarmTime - now).TotalHours > 24) continue;
+
+            // === УСТАНАВЛИВАЕМ БУДИЛЬНИК ===
+            systemAlarmService.SetAlarm(
+                alarmTime.Hour, 
+                alarmTime.Minute, 
+                $"Встреча: {ev.Subject}"
+            );
+
+            // Запоминаем, что мы уже поставили будильник на это событие
+            _scheduledEvents.Add(ev.ItemId.Id);
+            
+            System.Diagnostics.Debug.WriteLine($"Будильник установлен на {alarmTime:HH:mm} для {ev.Subject}");
+        }
+    }
+    
     public async Task CheckAndTriggerAlarmAsync(List<CalendarView>? events)
     {
         // 1. Если будильник выключен - выходим

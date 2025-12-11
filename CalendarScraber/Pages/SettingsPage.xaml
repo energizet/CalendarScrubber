@@ -24,7 +24,8 @@
                                Keyboard="Numeric"
                                Text="15"
                                HorizontalOptions="Fill"
-                               TextChanged="OnSettingsChanged" />
+                               Unfocused="OnSettingsChanged" 
+                               Completed="OnSettingsChanged" />
                         <Label Text="мин." Grid.Column="1" VerticalOptions="Center" Margin="10,0,0,0" />
                     </Grid>
                 </VerticalStackLayout>

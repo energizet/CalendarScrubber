@@ -23,8 +23,10 @@ public static class MauiProgram
 
 #if ANDROID
 		builder.Services.AddSingleton<ICookieExtractor, CookieExtractor>();
+        builder.Services.AddSingleton<ISystemAlarmService, SystemAlarmService>();
 #elif WINDOWS
         builder.Services.AddSingleton<ICookieExtractor, CookieExtractor>();
+        builder.Services.AddSingleton<ISystemAlarmService, SystemAlarmService>();
 #endif
 
 #if DEBUG
