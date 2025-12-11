@@ -1,3 +1,4 @@
+using System.Net;
 using CalendarScraber.Models;
 using CalendarScraber.Services;
 using Plugin.LocalNotification;
@@ -26,6 +27,32 @@ public partial class MainPage : ContentPage
 		_timer.Elapsed += async (s, e) => await LoadDataAsync();
 	}
 
+	private async Task RestoreSession()
+	{
+		// Загружаем куки из памяти
+		var savedCookies = await CookieStorage.LoadCookies();
+
+		// Проверяем, есть ли там что-то полезное (например, наш токен)
+		var cookiesCollection = savedCookies.GetCookies(new Uri(AppConfig.BaseDomain));
+		var hasAuthToken = false;
+
+		foreach (Cookie c in cookiesCollection)
+		{
+			if (c.Name.Equals(AppConfig.AuthCookieName, StringComparison.OrdinalIgnoreCase))
+			{
+				hasAuthToken = true;
+				break;
+			}
+		}
+
+		if (hasAuthToken)
+		{
+			// Если токен есть, сразу инициализируем клиент
+			_calendarService.UpdateCookies(savedCookies);
+			System.Diagnostics.Debug.WriteLine("Session restored from storage.");
+		}
+	}
+
 	// Обработчик кнопки настроек
 	private async void OnSettingsClicked(object sender, EventArgs e)
 	{
@@ -37,11 +64,15 @@ public partial class MainPage : ContentPage
 	{
 		base.OnAppearing();
 
+		await RestoreSession();
+
+#if ANDROID
 		// Запрос разрешения на уведомления (нужно для Android 13+)
 		if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
 		{
 			await LocalNotificationCenter.Current.RequestNotificationPermission();
 		}
+#endif
 
 		_timer.Start();
 

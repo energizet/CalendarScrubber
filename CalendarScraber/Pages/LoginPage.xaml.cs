@@ -32,6 +32,7 @@ public partial class LoginPage : ContentPage
 		{
 			_isSuccessDetected = true;
             
+			await CookieStorage.SaveCookies(container, AppConfig.BaseDomain);
 			System.Diagnostics.Debug.WriteLine($"✅ Авторизация успешна! Кука {authCookie.Name} найдена.");
             
 			// Прячем WebView, чтобы пользователь не нажимал лишнего

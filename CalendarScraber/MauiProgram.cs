@@ -13,7 +13,9 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
+#if ANDROID
 			.UseLocalNotification()
+#endif
 			.UseMauiCommunityToolkit()
 			.ConfigureFonts(fonts =>
 			{
