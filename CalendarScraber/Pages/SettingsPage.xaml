@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CalendarScraber.Pages.SettingsPage"
+             Title="Настройки будильника"
+             BackgroundColor="#F5F5F5">
+    <VerticalStackLayout Spacing="20" Padding="20">
+
+        <Frame CornerRadius="10" BackgroundColor="White" Padding="15">
+            <VerticalStackLayout Spacing="15">
+
+                <Grid ColumnDefinitions="*, Auto">
+                    <Label Text="Включить будильник" VerticalOptions="Center" FontSize="16" />
+                    <Switch x:Name="AlarmSwitch" Grid.Column="1" Toggled="OnSettingsChanged" />
+                </Grid>
+
+                <BoxView HeightRequest="1" Color="#E0E0E0" />
+
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="За сколько минут предупреждать:" FontSize="14" TextColor="Gray" />
+                    <Grid ColumnDefinitions="*, Auto">
+                        <Entry x:Name="MinutesEntry"
+                               Keyboard="Numeric"
+                               Text="15"
+                               HorizontalOptions="Fill"
+                               TextChanged="OnSettingsChanged" />
+                        <Label Text="мин." Grid.Column="1" VerticalOptions="Center" Margin="10,0,0,0" />
+                    </Grid>
+                </VerticalStackLayout>
+
+                <BoxView HeightRequest="1" Color="#E0E0E0" />
+
+                <Grid ColumnDefinitions="*, Auto">
+                    <VerticalStackLayout>
+                        <Label Text="Только активные события" VerticalOptions="Center" FontSize="16" />
+                        <Label Text="Игнорировать отмененные и без ответа" FontSize="12" TextColor="Gray" />
+                    </VerticalStackLayout>
+                    <Switch x:Name="ActiveOnlySwitch" Grid.Column="1" Toggled="OnSettingsChanged" />
+                </Grid>
+
+            </VerticalStackLayout>
+        </Frame>
+
+        <Label Text="Уведомление сработает, если приложение запущено."
+               HorizontalOptions="Center"
+               TextColor="Gray"
+               FontSize="12" />
+
+    </VerticalStackLayout>
+</ContentPage>

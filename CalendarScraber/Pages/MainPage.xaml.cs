@@ -1,10 +1,13 @@
+using CalendarScraber.Models;
 using CalendarScraber.Services;
+using Plugin.LocalNotification;
 
 namespace CalendarScraber.Pages;
 
 public partial class MainPage : ContentPage
 {
     private readonly CalendarService _calendarService;
+    private readonly AlarmService _alarmService;
     private readonly IServiceProvider _serviceProvider;
     private System.Timers.Timer _timer;
     
@@ -15,17 +18,31 @@ public partial class MainPage : ContentPage
     {
         InitializeComponent();
         _serviceProvider = serviceProvider;
-        _calendarService = new CalendarService(); // Создаем "пустой" сервис
+        _calendarService = new CalendarService();
+        _alarmService = new AlarmService();
 
         // Настраиваем таймер (раз в минуту)
         _timer = new System.Timers.Timer(60000);
         _timer.Elapsed += async (s, e) => await LoadDataAsync();
     }
 
+    // Обработчик кнопки настроек
+    private async void OnSettingsClicked(object sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new Pages.SettingsPage());
+    }
+    
     // Метод вызывается при старте приложения
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        
+        // Запрос разрешения на уведомления (нужно для Android 13+)
+        if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
+        {
+            await LocalNotificationCenter.Current.RequestNotificationPermission();
+        }
+        
         _timer.Start();
         
         // Сразу пробуем загрузить данные "не думая"
@@ -51,6 +68,7 @@ public partial class MainPage : ContentPage
                 {
                     EventsCollection.ItemsSource = events;
                     StatusLabel.Text = $"Обновлено: {DateTime.UtcNow.ToLocalTime():HH:mm}";
+                    Task.Run(() => _alarmService.CheckAndTriggerAlarmAsync(events));
                 }
             });
         }
@@ -110,5 +128,27 @@ public partial class MainPage : ContentPage
         // Просто вызываем нашу логику открытия окна или загрузки данных
         // Если токена нет, OpenLoginModal вызовется внутри LoadDataAsync или можно вызвать напрямую
         await LoadDataAsync(); 
+    }
+    
+    private async void OnEventSelected(object sender, SelectionChangedEventArgs e)
+    {
+        // 1. Получаем выбранный элемент
+        var selectedEvent = e.CurrentSelection.FirstOrDefault() as CalendarView;
+
+        if (selectedEvent == null) return;
+
+        // 2. Спрашиваем пользователя (опционально)
+        var answer = await DisplayAlertAsync("Тест будильника", 
+            $"Запустить тестовое уведомление для '{selectedEvent.Subject}'?", 
+            "Да", "Нет");
+
+        if (answer)
+        {
+            // 3. Вызываем принудительный будильник
+            await _alarmService.ForceTriggerAlarmAsync(selectedEvent);
+        }
+
+        // 4. Снимаем выделение, чтобы можно было нажать на тот же элемент снова
+        ((CollectionView)sender).SelectedItem = null;
     }
 }

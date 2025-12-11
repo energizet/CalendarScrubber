@@ -2,6 +2,7 @@
 using CalendarScraber.Services;
 using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
+using Plugin.LocalNotification;
 
 namespace CalendarScraber;
 
@@ -12,6 +13,7 @@ public static class MauiProgram
 		var builder = MauiApp.CreateBuilder();
 		builder
 			.UseMauiApp<App>()
+			.UseLocalNotification()
 			.UseMauiCommunityToolkit()
 			.ConfigureFonts(fonts =>
 			{

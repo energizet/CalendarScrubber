@@ -12,6 +12,10 @@
         </ResourceDictionary>
     </ContentPage.Resources>
     
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Настройки" Clicked="OnSettingsClicked" Order="Primary"/>
+    </ContentPage.ToolbarItems>
+    
     <Grid RowDefinitions="Auto, Auto, Auto, *"
           Padding="20"
           RowSpacing="15">
@@ -59,7 +63,7 @@
 
         <CollectionView x:Name="EventsCollection"
                         Grid.Row="3"
-                        SelectionMode="None">
+                        SelectionMode="Single">
 
             <CollectionView.EmptyView>
                 <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10">
