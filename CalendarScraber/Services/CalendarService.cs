@@ -6,52 +6,88 @@ namespace CalendarScraber.Services;
 
 public class CalendarService
 {
-	private HttpClient? _httpClient;
+	private HttpClient _httpClient;
 
-	// Инициализируем клиент, когда получили куки
-	public void InitializeClient(CookieContainer cookies)
+// Опции для десериализации (создаем один раз для оптимизации)
+	private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+	{
+		PropertyNameCaseInsensitive = true // Игнорировать регистр (itemId == ItemId)
+	};
+
+	public CalendarService()
+	{
+		// Инициализируем клиент сразу, даже без кук
+		// BaseDomain берем из конфига
+		_httpClient = new HttpClient
+		{
+			BaseAddress = new Uri(AppConfig.BaseDomain)
+		};
+
+		// Притворяемся браузером сразу
+		_httpClient.DefaultRequestHeaders.Add("User-Agent",
+			"Mozilla/5.0 (Android 13; Mobile; rv:109.0) Gecko/109.0 Firefox/112.0");
+	}
+
+	public void UpdateCookies(CookieContainer cookies)
 	{
 		var handler = new HttpClientHandler
 		{
 			CookieContainer = cookies,
-			UseCookies = true
+			UseCookies = true,
+			AllowAutoRedirect = false // Для API редиректы часто вредны
 		};
 
+		// Пересоздаем клиент с новыми куками
 		_httpClient = new HttpClient(handler)
 		{
 			BaseAddress = new Uri(AppConfig.BaseDomain)
 		};
 	}
 
-	public async Task<List<CalendarView>?> CheckEventsAsync()
+	public async Task<List<CalendarView>?> GetEventsAsync()
 	{
-		if (_httpClient == null) return null;
-
 		try
 		{
-			// Формируем даты
-			var today = DateTime.Now.ToString("yyyy-MM-dd");
-			var start = WebUtility.UrlEncode($"{today}T00:00:00+03:00");
-			var end = WebUtility.UrlEncode($"{today}T23:59:59+03:00");
+			// 1. ЛОГИКА ДАТ: Следующие 24 часа в UTC
+			var nowUtc = DateTime.UtcNow;
+			var endUtc = nowUtc.AddHours(24);
 
-			var url = $"{AppConfig.CalendarEndpoint}?start={start}&end={end}";
+			// 2. ФОРМАТИРОВАНИЕ: ISO 8601 с суффиксом Z
+			// Пример: 2023-10-05T14:30:00Z
+			var format = "yyyy-MM-ddTHH:mm:ssZ";
+
+			var startParam = WebUtility.UrlEncode(nowUtc.ToString(format));
+			var endParam = WebUtility.UrlEncode(endUtc.ToString(format));
+
+			var url = $"{AppConfig.CalendarEndpoint}?start={startParam}&end={endParam}";
 
 			var response = await _httpClient.GetAsync(url);
-            
+
+			// ГЛАВНОЕ ИЗМЕНЕНИЕ: Проверка статуса
+			if (response.StatusCode == HttpStatusCode.Unauthorized ||
+			    response.StatusCode == HttpStatusCode.Forbidden)
+			{
+				// Выбрасываем специальное исключение, которое поймает MainPage
+				throw new UnauthorizedAccessException("Требуется авторизация");
+			}
+
 			if (response.IsSuccessStatusCode)
 			{
 				var json = await response.Content.ReadAsStringAsync();
-				var result = JsonSerializer.Deserialize<CalendarResponse>(json, new System.Text.Json.JsonSerializerOptions
-				{
-					PropertyNameCaseInsensitive = true
-				});
-				return result?.Views;
+				// 4. ДЕСЕРИАЛИЗАЦИЯ: Регистронезависимая
+				var result = JsonSerializer.Deserialize<CalendarResponse>(json, _jsonOptions);
+				return result?.Views ?? new List<CalendarView>();
 			}
 		}
-		catch (Exception ex)
+		catch (HttpRequestException ex)
 		{
-			Console.WriteLine($"Ошибка запроса: {ex.Message}");
+			System.Diagnostics.Debug.WriteLine($"Network error: {ex.Message}");
 		}
+		catch (JsonException ex) // Ловим ошибки парсинга JSON
+		{
+			System.Diagnostics.Debug.WriteLine($"JSON parse error: {ex.Message}");
+		}
+
 		return null;
 	}
 }

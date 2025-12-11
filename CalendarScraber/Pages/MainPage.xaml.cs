@@ -4,61 +4,111 @@ namespace CalendarScraber.Pages;
 
 public partial class MainPage : ContentPage
 {
-	private CalendarService _calendarService = new CalendarService();
-	private System.Timers.Timer _timer;
+    private readonly CalendarService _calendarService;
+    private readonly IServiceProvider _serviceProvider;
+    private System.Timers.Timer _timer;
+    
+    // Флаг, чтобы не открыть 10 окон авторизации, если таймер тикает
+    private bool _isLoginOpen = false; 
 
-	public MainPage()
-	{
-		InitializeComponent();
+    public MainPage(IServiceProvider serviceProvider)
+    {
+        InitializeComponent();
+        _serviceProvider = serviceProvider;
+        _calendarService = new CalendarService(); // Создаем "пустой" сервис
+
+        // Настраиваем таймер (раз в минуту)
+        _timer = new System.Timers.Timer(60000);
+        _timer.Elapsed += async (s, e) => await LoadDataAsync();
+    }
+
+    // Метод вызывается при старте приложения
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        _timer.Start();
         
-		// Настраиваем таймер (например, каждые 60 секунд)
-		_timer = new System.Timers.Timer(60000);
-		_timer.Elapsed += async (s, e) => await CheckCalendar();
-	}
+        // Сразу пробуем загрузить данные "не думая"
+        await LoadDataAsync();
+    }
 
-	// Кнопка "Войти" на главном экране
-	private async void OnLoginClicked(object sender, EventArgs e)
-	{
-		var loginPage = Handler!.MauiContext!.Services.GetService<LoginPage>();
-		loginPage.OnLoginSuccess += (cookies) =>
-		{
-			// 1. Инициализируем HTTP клиент с полученными куками
-			_calendarService.InitializeClient(cookies);
-            
-			// 2. Запускаем таймер проверки
-			_timer.Start();
-            
-			// 3. Делаем первую проверку сразу
-			Task.Run(CheckCalendar);
-		};
+    private async Task LoadDataAsync()
+    {
+        // Если окно логина уже открыто, не долбим запросами
+        if (_isLoginOpen) return;
 
-		await Navigation.PushModalAsync(loginPage);
-	}
+        try
+        {
+            MainThread.BeginInvokeOnMainThread(() => StatusLabel.Text = "Проверка...");
 
-	private async Task CheckCalendar()
-	{
-		// Показываем спиннер, что идет запрос
-		MainThread.BeginInvokeOnMainThread(() => LoadingSpinner.IsRunning = true);
+            // 1. Делаем запрос
+            var events = await _calendarService.GetEventsAsync();
 
-		var events = await _calendarService.CheckEventsAsync();
+            // 2. Если успех - обновляем UI
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                if (events != null)
+                {
+                    EventsCollection.ItemsSource = events;
+                    StatusLabel.Text = $"Обновлено: {DateTime.UtcNow.ToLocalTime():HH:mm}";
+                }
+            });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // 3. ПОЙМАЛИ 401 -> ЗАПУСКАЕМ АВТОРИЗАЦИЮ
+            await OpenLoginModal();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
+        }
+    }
 
-		MainThread.BeginInvokeOnMainThread(() =>
-		{
-			LoadingSpinner.IsRunning = false;
-        
-			if (events != null)
-			{
-				StatusLabel.Text = $"Обновлено: {DateTime.Now:HH:mm:ss} (Найдено: {events.Count})";
-				StatusLabel.TextColor = Colors.Green;
+    private async Task OpenLoginModal()
+    {
+        // Защита от открытия второго окна
+        if (_isLoginOpen) return; 
+        _isLoginOpen = true;
 
-				// ! ВАЖНО: Заполняем CollectionView данными
-				EventsCollection.ItemsSource = events; 
-			}
-			else
-			{
-				StatusLabel.Text = "Ошибка получения данных";
-				StatusLabel.TextColor = Colors.Red;
-			}
-		});
-	}
+        // Переходим в главный поток, так как работаем с UI
+        await MainThread.InvokeOnMainThreadAsync(async () =>
+        {
+            try 
+            {
+                // Получаем страницу через DI
+                var loginPage = _serviceProvider.GetRequiredService<LoginPage>();
+
+                // Подписываемся на успех
+                loginPage.OnLoginSuccess += async (cookies) =>
+                {
+                    // 1. Обновляем куки в сервисе
+                    _calendarService.UpdateCookies(cookies);
+                    
+                    // 2. Снимаем флаг блокировки
+                    _isLoginOpen = false;
+
+                    // 3. ПОВТОРЯЕМ ЗАПРОС СРАЗУ ЖЕ
+                    StatusLabel.Text = "Вход выполнен. Обновление...";
+                    await LoadDataAsync();
+                };
+
+                // Показываем окно
+                await Navigation.PushModalAsync(loginPage);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Ошибка открытия окна: {ex}");
+                _isLoginOpen = false;
+            }
+        });
+    }
+    
+    // Обработчик нажатия кнопки из XAML
+    private async void OnLoginClicked(object sender, EventArgs e)
+    {
+        // Просто вызываем нашу логику открытия окна или загрузки данных
+        // Если токена нет, OpenLoginModal вызовется внутри LoadDataAsync или можно вызвать напрямую
+        await LoadDataAsync(); 
+    }
 }
