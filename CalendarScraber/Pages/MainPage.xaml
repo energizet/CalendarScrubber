@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CalendarScraber.Pages.MainPage"
+             Title="Монитор Событий"
+             BackgroundColor="#F5F5F5">
+    <Grid RowDefinitions="Auto, Auto, Auto, *" 
+                  Padding="20" 
+                  RowSpacing="15">
+
+        <VerticalStackLayout Grid.Row="0" Spacing="5">
+            <Label Text="📅 Календарь" 
+                   FontSize="28" 
+                   FontAttributes="Bold" 
+                   HorizontalOptions="Center"
+                   TextColor="#1f1f1f"/>
+            <Label Text="Автоматическая проверка событий" 
+                   FontSize="14" 
+                   TextColor="Gray" 
+                   HorizontalOptions="Center"/>
+        </VerticalStackLayout>
+
+        <Button x:Name="LoginBtn"
+                Grid.Row="1"
+                Text="Войти через SSO"
+                Clicked="OnLoginClicked"
+                BackgroundColor="#512BD4"
+                TextColor="White"
+                HeightRequest="50"
+                CornerRadius="12"
+                FontAttributes="Bold"
+                Shadow="{Shadow Brush=Black, Offset='2,2', Opacity=0.2}"/>
+
+        <Frame Grid.Row="2" 
+               CornerRadius="8" 
+               Padding="15" 
+               BackgroundColor="White" 
+               BorderColor="#E0E0E0">
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
+                <ActivityIndicator x:Name="LoadingSpinner" 
+                                   IsRunning="False" 
+                                   Color="#512BD4"
+                                   HeightRequest="20" 
+                                   WidthRequest="20"/>
+                <Label x:Name="StatusLabel" 
+                       Text="Ожидание авторизации..." 
+                       VerticalOptions="Center" 
+                       TextColor="#333"/>
+            </HorizontalStackLayout>
+        </Frame>
+
+        <CollectionView x:Name="EventsCollection" 
+                        Grid.Row="3"
+                        SelectionMode="None">
+            
+            <CollectionView.EmptyView>
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="10">
+                    <Label Text="🔕" FontSize="40" HorizontalOptions="Center"/>
+                    <Label Text="Событий пока нет" TextColor="Gray" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Margin="0,5" 
+                           Padding="15" 
+                           CornerRadius="12" 
+                           BackgroundColor="White"
+                           BorderColor="Transparent"
+                           HasShadow="True">
+                        <Grid ColumnDefinitions="60, *">
+                            
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                <Label Text="{Binding Start, StringFormat='{0:HH:mm}'}" 
+                                       TextColor="#512BD4" 
+                                       FontAttributes="Bold" 
+                                       FontSize="16"/>
+                                <Label Text="{Binding End, StringFormat='{0:HH:mm}'}" 
+                                       TextColor="Gray" 
+                                       FontSize="12"/>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Margin="10,0,0,0" VerticalOptions="Center">
+                                <Label Text="{Binding Subject}" 
+                                       FontSize="16" 
+                                       FontAttributes="Bold" 
+                                       LineBreakMode="TailTruncation"
+                                       TextColor="Black"/>
+                                <Label Text="{Binding ItemId.Id, StringFormat='ID: {0}'}" 
+                                       FontSize="10" 
+                                       TextColor="Gray"/>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>
