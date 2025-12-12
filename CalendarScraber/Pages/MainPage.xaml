@@ -32,6 +32,18 @@
                    HorizontalOptions="Center" />
         </VerticalStackLayout>
 
+        <Button x:Name="RunBtn"
+                IsVisible="False"
+                Grid.Row="0"
+                Text="Run"
+                Clicked="RunClicked"
+                BackgroundColor="#512BD4"
+                TextColor="White"
+                HeightRequest="50"
+                CornerRadius="12"
+                FontAttributes="Bold"
+                Shadow="{Shadow Brush=Black, Offset='2,2', Opacity=0.2}" />
+
         <Button x:Name="LoginBtn"
                 Grid.Row="1"
                 Text="Обновить"

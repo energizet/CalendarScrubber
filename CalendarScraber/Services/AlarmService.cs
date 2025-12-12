@@ -9,9 +9,9 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 	// Можно хранить ID событий в Preferences, если нужно сохранять между перезапусками
 	private HashSet<string> _scheduledEvents = new HashSet<string>();
 
-	public void ScheduleSystemAlarms(List<CalendarView> events)
+	public void ScheduleSystemAlarms(List<CalendarView>? events)
 	{
-		if (!SettingsManager.IsAlarmEnabled) return;
+		if (!SettingsManager.IsAlarmEnabled || events == null || events.Count == 0) return;
 
 		var now = DateTime.Now; // Локальное время
 		var minutesThreshold = SettingsManager.MinutesBefore; // Например, 15 мин

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using CalendarScraber.Models;
 using CalendarScraber.Services;
@@ -18,6 +19,9 @@ public partial class MainPage : ContentPage
 	public MainPage(IServiceProvider serviceProvider)
 	{
 		InitializeComponent();
+#if DEBUG
+		RunBtn.IsVisible = true;
+#endif
 		_serviceProvider = serviceProvider;
 		_calendarService = new CalendarService();
 		_alarmService = new AlarmService(_serviceProvider.GetRequiredService<ISystemAlarmService>());
@@ -49,14 +53,14 @@ public partial class MainPage : ContentPage
 		{
 			// Если токен есть, сразу инициализируем клиент
 			_calendarService.UpdateCookies(savedCookies);
-			System.Diagnostics.Debug.WriteLine("Session restored from storage.");
+			Debug.WriteLine("Session restored from storage.");
 		}
 	}
 
 	// Обработчик кнопки настроек
 	private async void OnSettingsClicked(object sender, EventArgs e)
 	{
-		await Navigation.PushAsync(new Pages.SettingsPage());
+		await Navigation.PushAsync(new SettingsPage());
 	}
 
 	// Метод вызывается при старте приложения
@@ -114,7 +118,7 @@ public partial class MainPage : ContentPage
 		}
 		catch (Exception ex)
 		{
-			System.Diagnostics.Debug.WriteLine(ex);
+			Debug.WriteLine(ex);
 		}
 	}
 
@@ -151,10 +155,29 @@ public partial class MainPage : ContentPage
 			}
 			catch (Exception ex)
 			{
-				System.Diagnostics.Debug.WriteLine($"Ошибка открытия окна: {ex}");
+				Debug.WriteLine($"Ошибка открытия окна: {ex}");
 				_isLoginOpen = false;
 			}
 		});
+	}
+
+	private async void RunClicked(object sender, EventArgs e)
+	{
+		var id = Random.Shared.Next(0, 100);
+		var ev = new CalendarView
+		{
+			Subject = "asd" + id,
+			Start = DateTime.UtcNow.AddMinutes(2),
+			End = DateTime.UtcNow.AddMinutes(7),
+			ItemId = new()
+			{
+				Id = id.ToString(),
+			},
+		};
+		var events = (List<CalendarView>)[ev];
+		EventsCollection.ItemsSource = events;
+		//_alarmService.ScheduleSystemAlarms(events);
+		await _alarmService.CheckAndTriggerAlarmAsync(events);
 	}
 
 	// Обработчик нажатия кнопки из XAML
