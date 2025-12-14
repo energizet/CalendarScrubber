@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Android.App;
 using Android.Content;
+using AndroidX.Core.App;
 using CalendarScraber.Models;
 using CalendarScraber.Services;
 using Application = Android.App.Application;
@@ -53,5 +54,14 @@ public class SystemAlarmService : ISystemAlarmService
             manager.Cancel(pendingIntent);
             pendingIntent.Cancel();
         }
+    }
+    
+    public void CancelNotification(string eventId)
+    {
+        // Вычисляем тот же ID, что и при создании уведомления
+        var notificationId = eventId.GetHashCode();
+
+        var manager = NotificationManagerCompat.From(Application.Context);
+        manager?.Cancel(notificationId);
     }
 }

@@ -1,9 +1,12 @@
 using System.Text.Json;
+using _Microsoft.Android.Resource.Designer;
 using Android.App;
 using Android.Content;
 using Android.OS;
 using AndroidX.Core.App;
 using CalendarScraber.Models;
+using CalendarScraber.Services;
+using Application = Microsoft.Maui.Controls.Application;
 
 namespace CalendarScraber;
 
@@ -23,6 +26,9 @@ public class AlarmReceiver : BroadcastReceiver
 			var json = intent.GetStringExtra("event_json") ?? "";
 			if (string.IsNullOrEmpty(json)) return;
 			var isScreenOn = pm.IsInteractive;
+			
+			var soundPlayer = Application.Current?.Handler?.MauiContext?.Services.GetService<ISystemSoundPlayer>();
+			soundPlayer?.Play();
 
 			ShowNotification(context, json, fullScreen: !isScreenOn);
 		}
@@ -51,24 +57,39 @@ public class AlarmReceiver : BroadcastReceiver
 			activityIntent,
 			PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent);
 
+		// === Интент для кнопки "СТОП" ===
+		var stopIntent = new Intent(context, typeof(StopAlarmReceiver));
+		stopIntent.PutExtra("notification_id", ev.ItemId.Id);
+        
+		var stopPendingIntent = PendingIntent.GetBroadcast(
+			context,
+			notificationId,
+			stopIntent,
+			PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent);
+		
 		var channelId = "alarm_critical_channel";
 		CreateNotificationChannel(context, channelId);
 
+		var packageName = context.PackageName;
+		var remoteViews = new Android.Widget.RemoteViews(packageName, ResourceConstant.Layout.notification_custom);
+
+		// Привязываем данные к элементам XML
+		remoteViews.SetTextViewText(ResourceConstant.Id.txt_time, time);
+		remoteViews.SetTextViewText(ResourceConstant.Id.txt_subject, subject);
+		remoteViews.SetOnClickPendingIntent(ResourceConstant.Id.btn_stop, stopPendingIntent);
+
 		var notificationBuilder = new NotificationCompat.Builder(context, channelId)
 			.SetSmallIcon(Android.Resource.Drawable.IcMenuMyCalendar)
-			?.SetContentTitle($"⏰ {time} {subject}")
-			?.SetContentText("Нажмите, чтобы открыть")
+			?.SetCustomContentView(remoteViews)
 			?.SetPriority(NotificationCompat.PriorityMax)
 			?.SetCategory(NotificationCompat.CategoryAlarm)
-			?.SetAutoCancel(true);
+			?.SetAutoCancel(true)
+			?.SetOngoing(true)
+			?.SetVisibility(NotificationCompat.VisibilityPublic);
 
 		if (fullScreen)
 		{
 			notificationBuilder?.SetFullScreenIntent(pendingIntent, highPriority: true);
-		}
-		else
-		{
-			notificationBuilder?.SetContentIntent(pendingIntent);
 		}
 
 		var notificationManager = NotificationManagerCompat.From(context);

@@ -13,7 +13,7 @@ public partial class MainPage : ContentPage
 	private readonly IServiceProvider _serviceProvider;
 	private readonly IForegroundService _foregroundService;
 
-	private System.Timers.Timer _timer;
+	private readonly System.Timers.Timer _timer;
 
 	// Флаг, чтобы не открыть 10 окон авторизации, если таймер тикает
 	private bool _isLoginOpen = false;
@@ -22,7 +22,7 @@ public partial class MainPage : ContentPage
 	{
 		InitializeComponent();
 #if DEBUG
-		RunBtn.IsVisible = true;
+		//RunBtn.IsVisible = true;
 #endif
 		_serviceProvider = serviceProvider;
 		_calendarService = new CalendarService();

@@ -16,4 +16,9 @@ public class SystemAlarmService : ISystemAlarmService
     {
         System.Diagnostics.Debug.WriteLine($"[Windows Stub] Alarm cancelled (ID: {ev.ItemId.Id})");
     }
+    
+    public void CancelNotification(string eventId)
+    {
+        // Windows stub: ничего не делаем
+    }
 }

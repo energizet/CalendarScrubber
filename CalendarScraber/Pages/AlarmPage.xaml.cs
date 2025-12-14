@@ -7,23 +7,26 @@ namespace CalendarScraber.Pages;
 
 public partial class AlarmPage : ContentPage
 {
-	private readonly ISystemSoundPlayer _soundPlayer;
+	private readonly CalendarView _eventData;
+	private readonly ISystemSoundPlayer? _soundPlayer;
+	private readonly ISystemAlarmService? _alarmService;
 
 	public AlarmPage(CalendarView eventData)
 	{
+		_eventData = eventData;
 		InitializeComponent();
 
-		_soundPlayer = Application.Current!.Handler!.MauiContext!.Services.GetRequiredService<ISystemSoundPlayer>();
+		_soundPlayer = Application.Current?.Handler?.MauiContext?.Services.GetService<ISystemSoundPlayer>();
+		_alarmService = Application.Current?.Handler?.MauiContext?.Services.GetService<ISystemAlarmService>();
 
 		SubjectLabel.Text = eventData.DisplaySubject;
 		TimeLabel.Text = $"{eventData.LocalStart:HH:mm} - {eventData.LocalEnd:HH:mm}";
-
-		_soundPlayer.Play();
 	}
 
 	private async void OnStopClicked(object sender, EventArgs e)
 	{
-		_soundPlayer.Stop();
+		_soundPlayer?.Stop();
+		_alarmService?.CancelNotification(_eventData.ItemId.Id);
 		await Navigation.PopModalAsync();
 	}
 
@@ -31,6 +34,7 @@ public partial class AlarmPage : ContentPage
 	protected override void OnDisappearing()
 	{
 		base.OnDisappearing();
-		_soundPlayer.Stop();
+		_soundPlayer?.Stop();
+		_alarmService?.CancelNotification(_eventData.ItemId.Id);
 	}
 }
