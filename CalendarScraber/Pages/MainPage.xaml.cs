@@ -11,6 +11,8 @@ public partial class MainPage : ContentPage
 	private readonly CalendarService _calendarService;
 	private readonly AlarmService _alarmService;
 	private readonly IServiceProvider _serviceProvider;
+	private readonly IForegroundService _foregroundService;
+
 	private System.Timers.Timer _timer;
 
 	// Флаг, чтобы не открыть 10 окон авторизации, если таймер тикает
@@ -25,6 +27,7 @@ public partial class MainPage : ContentPage
 		_serviceProvider = serviceProvider;
 		_calendarService = new CalendarService();
 		_alarmService = new AlarmService(_serviceProvider.GetRequiredService<ISystemAlarmService>());
+		_foregroundService = _serviceProvider.GetRequiredService<IForegroundService>();
 
 		// Настраиваем таймер (раз в минуту)
 		_timer = new System.Timers.Timer(60000);
@@ -77,6 +80,7 @@ public partial class MainPage : ContentPage
 			await LocalNotificationCenter.Current.RequestNotificationPermission();
 		}
 #endif
+		_foregroundService.Start("Календарь", "Служба мониторинга активна");
 
 		_timer.Start();
 
@@ -103,10 +107,13 @@ public partial class MainPage : ContentPage
 				{
 					EventsCollection.ItemsSource = events;
 					StatusLabel.Text = $"Обновлено: {DateTime.UtcNow.ToLocalTime():HH:mm}";
-					Task.Run(async () =>
+					
+					UpdateNotificationShade(events);
+					
+					Task.Run(() =>
 					{
 						_alarmService.ScheduleSystemAlarms(events);
-						await _alarmService.CheckAndTriggerAlarmAsync(events);
+						//await _alarmService.CheckAndTriggerAlarmAsync(events);
 					});
 				}
 			});
@@ -122,6 +129,26 @@ public partial class MainPage : ContentPage
 		}
 	}
 
+	private void UpdateNotificationShade(List<CalendarView> events)
+	{
+		var now = DateTime.UtcNow;
+		// Ищем ближайшее будущее событие
+		var nextEvent = events
+			.Where(e => e.Start > now && !e.IsCancelled)
+			.MinBy(e => e.Start);
+
+		if (nextEvent != null)
+		{
+			// Обновляем уведомление: "Ближайшее: Совещание в 14:00"
+			var title = $"Ближайшее: {nextEvent.LocalStart:HH:mm}";
+			_foregroundService.Start(title, nextEvent.DisplaySubject);
+		}
+		else
+		{
+			_foregroundService.Start("Календарь", "Нет предстоящих событий");
+		}
+	}
+	
 	private async Task OpenLoginModal()
 	{
 		// Защита от открытия второго окна
@@ -161,14 +188,14 @@ public partial class MainPage : ContentPage
 		});
 	}
 
-	private async void RunClicked(object sender, EventArgs e)
+	private void RunClicked(object sender, EventArgs e)
 	{
 		var id = Random.Shared.Next(0, 100);
 		var ev = new CalendarView
 		{
 			Subject = "asd" + id,
 			Start = DateTime.UtcNow.AddMinutes(2),
-			End = DateTime.UtcNow.AddMinutes(7),
+			End = DateTime.UtcNow.AddMinutes(10),
 			ItemId = new()
 			{
 				Id = id.ToString(),
@@ -176,8 +203,8 @@ public partial class MainPage : ContentPage
 		};
 		var events = (List<CalendarView>)[ev];
 		EventsCollection.ItemsSource = events;
-		//_alarmService.ScheduleSystemAlarms(events);
-		await _alarmService.CheckAndTriggerAlarmAsync(events);
+		_alarmService.ScheduleSystemAlarms(events);
+		//await _alarmService.CheckAndTriggerAlarmAsync(events);
 	}
 
 	// Обработчик нажатия кнопки из XAML
@@ -186,27 +213,5 @@ public partial class MainPage : ContentPage
 		// Просто вызываем нашу логику открытия окна или загрузки данных
 		// Если токена нет, OpenLoginModal вызовется внутри LoadDataAsync или можно вызвать напрямую
 		await LoadDataAsync();
-	}
-
-	private async void OnEventSelected(object sender, SelectionChangedEventArgs e)
-	{
-		// 1. Получаем выбранный элемент
-		var selectedEvent = e.CurrentSelection.FirstOrDefault() as CalendarView;
-
-		if (selectedEvent == null) return;
-
-		// 2. Спрашиваем пользователя (опционально)
-		var answer = await DisplayAlertAsync("Тест будильника",
-			$"Запустить тестовое уведомление для '{selectedEvent.Subject}'?",
-			"Да", "Нет");
-
-		if (answer)
-		{
-			// 3. Вызываем принудительный будильник
-			await _alarmService.ForceTriggerAlarmAsync(selectedEvent);
-		}
-
-		// 4. Снимаем выделение, чтобы можно было нажать на тот же элемент снова
-		((CollectionView)sender).SelectedItem = null;
 	}
 }

@@ -10,10 +10,10 @@ public static class CookieStorage
 	// Простая модель для сохранения данных куки
 	public class CookieDto
 	{
-		public string Name { get; set; }
-		public string Value { get; set; }
-		public string Domain { get; set; }
-		public string Path { get; set; }
+		public string Name { get; set; } = string.Empty;
+		public string Value { get; set; } = string.Empty;
+		public string Domain { get; set; } = string.Empty;
+		public string Path { get; set; } = string.Empty;
 	}
 
 	// === СОХРАНЕНИЕ ===

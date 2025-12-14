@@ -1,7 +1,10 @@
+using CalendarScraber.Models;
+
 namespace CalendarScraber.Services;
 
 public interface ISystemAlarmService
 {
-	// hour: 0-23, minute: 0-59
-	void SetAlarm(int hour, int minute, string title);
+	// Оставляем ID (для логики системы) и JSON (как контейнер данных)
+	void SetAlarm(int hour, int minute, CalendarView ev);
+	void CancelAlarm(CalendarView ev);
 }

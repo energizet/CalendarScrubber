@@ -1,42 +1,57 @@
+using System.Text.Json;
+using Android.App;
 using Android.Content;
-using Android.Provider;
+using CalendarScraber.Models;
 using CalendarScraber.Services;
+using Application = Android.App.Application;
 
 namespace CalendarScraber;
 
 public class SystemAlarmService : ISystemAlarmService
 {
-	public void SetAlarm(int hour, int minute, string title)
-	{
-		try
-		{
-			var intent = new Intent(AlarmClock.ActionSetAlarm);
-            
-			// Устанавливаем параметры
-			intent.PutExtra(AlarmClock.ExtraHour, hour);
-			intent.PutExtra(AlarmClock.ExtraMinutes, minute);
-			intent.PutExtra(AlarmClock.ExtraMessage, title);
-            
-			// ExtraSkipUi = true означает, что будильник поставится "тихо", 
-			// не открывая приложение Часы перед пользователем (если система позволяет)
-			intent.PutExtra(AlarmClock.ExtraSkipUi, true);
+    public void SetAlarm(int hour, int minute, CalendarView ev)
+    {
+        var calendar = Java.Util.Calendar.Instance;
+        calendar.TimeInMillis = Java.Lang.JavaSystem.CurrentTimeMillis();
+        calendar.Set(Java.Util.CalendarField.HourOfDay, hour);
+        calendar.Set(Java.Util.CalendarField.Minute, minute);
+        calendar.Set(Java.Util.CalendarField.Second, 0);
 
-			// Флаг нужен, так как мы запускаем из контекста приложения
-			intent.AddFlags(ActivityFlags.NewTask);
+        // Если время прошло, будильник сработает сразу (или можно добавить день)
+        
+        var intent = new Intent(Application.Context, typeof(AlarmReceiver));
+        // Кладем только JSON. ID нам тут нужен только для RequestCode
+        intent.PutExtra("event_json", JsonSerializer.Serialize(ev));
 
-			// Проверяем, есть ли приложение, способное обработать этот интент (приложение Часы)
-			if (intent.ResolveActivity(Android.App.Application.Context.PackageManager!) != null)
-			{
-				Android.App.Application.Context.StartActivity(intent);
-			}
-			else
-			{
-				System.Diagnostics.Debug.WriteLine("Не найдено приложение Часов");
-			}
-		}
-		catch (Exception ex)
-		{
-			System.Diagnostics.Debug.WriteLine($"Ошибка установки будильника: {ex.Message}");
-		}
-	}
+        // Генерируем уникальный код из ID, чтобы будильники не перезатирали друг друга
+        var requestCode = ev.ItemId.Id.GetHashCode();
+
+        var pendingIntent = PendingIntent.GetBroadcast(
+            Application.Context, 
+            requestCode, 
+            intent, 
+            PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent
+        )!;
+
+        var manager = (AlarmManager)Application.Context.GetSystemService(Context.AlarmService)!;
+        var alarmClockInfo = new AlarmManager.AlarmClockInfo(calendar.TimeInMillis, pendingIntent);
+        manager.SetAlarmClock(alarmClockInfo, pendingIntent);
+    }
+
+    public void CancelAlarm(CalendarView ev)
+    {
+        var manager = (AlarmManager)Application.Context.GetSystemService(Context.AlarmService)!;
+        var intent = new Intent(Application.Context, typeof(AlarmReceiver));
+        var requestCode = ev.ItemId.Id.GetHashCode();
+        
+        var pendingIntent = PendingIntent.GetBroadcast(
+            Application.Context, requestCode, intent, 
+            PendingIntentFlags.Immutable | PendingIntentFlags.NoCreate);
+
+        if (pendingIntent != null)
+        {
+            manager.Cancel(pendingIntent);
+            pendingIntent.Cancel();
+        }
+    }
 }

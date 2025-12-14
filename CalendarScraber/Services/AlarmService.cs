@@ -39,9 +39,9 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 
 			// === УСТАНАВЛИВАЕМ БУДИЛЬНИК ===
 			systemAlarmService.SetAlarm(
-				alarmTime.Hour,
-				alarmTime.Minute,
-				$"Встреча: {ev.Subject}"
+				alarmTime.Hour, 
+				alarmTime.Minute, 
+				ev
 			);
 
 			// Запоминаем, что мы уже поставили будильник на это событие

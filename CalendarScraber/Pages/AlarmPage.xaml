@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CalendarScraber.Pages.AlarmPage"
+             BackgroundColor="#D32F2F"
+             Title="Alarm">
+    <NavigationPage.HasNavigationBar>False</NavigationPage.HasNavigationBar>
+
+    <Grid RowDefinitions="*, Auto, *" Padding="30">
+        <VerticalStackLayout Grid.Row="0" VerticalOptions="Center" Spacing="20">
+            <Label Text="⏰" FontSize="80" HorizontalOptions="Center" />
+            <Label x:Name="SubjectLabel" Text="ВСТРЕЧА"
+                   TextColor="White" FontSize="32" FontAttributes="Bold"
+                   HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+            <Label x:Name="TimeLabel" Text="Сейчас"
+                   TextColor="White" FontSize="24" HorizontalOptions="Center" />
+        </VerticalStackLayout>
+
+        <Button Grid.Row="2" Text="ОСТАНОВИТЬ" Clicked="OnStopClicked"
+                BackgroundColor="White" TextColor="#D32F2F"
+                FontSize="24" FontAttributes="Bold" HeightRequest="80" CornerRadius="40" />
+    </Grid>
+</ContentPage>

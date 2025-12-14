@@ -2,23 +2,24 @@ namespace CalendarScraber.Models;
 
 public class CalendarResponse
 {
-	public List<CalendarView> Views { get; set; }
+	public List<CalendarView> Views { get; set; } = new(); // Инициализация
 }
 
 public class CalendarView
 {
 	// === Данные из JSON ===
-	public ItemIdWrapper ItemId { get; set; }
+	public ItemIdWrapper ItemId { get; set; } = new(); // Инициализация
     
-	public DateTime Start { get; set; } // UTC
-	public DateTime End { get; set; }   // UTC
+	public DateTime Start { get; set; }
+	public DateTime End { get; set; }
     
-	public string Subject { get; set; }
-	public string Preview { get; set; } // Описание
-	public string Location { get; set; }
+	// Инициализация пустой строкой, чтобы убрать Warning CS8618
+	public string Subject { get; set; } = string.Empty;
+	public string Preview { get; set; } = string.Empty;
+	public string Location { get; set; } = string.Empty;
     
 	public bool IsCancelled { get; set; }
-	public string Status { get; set; } // "NoResponseReceived", "Tentative", "Organizer", etc.
+	public string Status { get; set; } = string.Empty;
 	public bool IsRecurring { get; set; }
 
 
@@ -56,6 +57,6 @@ public class CalendarView
 
 public class ItemIdWrapper
 {
-	public string Id { get; set; }
-	public string ChangeKey { get; set; }
+	public string Id { get; set; } = string.Empty;
+	public string ChangeKey { get; set; } = string.Empty;
 }

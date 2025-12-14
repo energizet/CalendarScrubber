@@ -1,12 +1,19 @@
+using CalendarScraber.Models;
 using CalendarScraber.Services;
 
 namespace CalendarScraber;
 
 public class SystemAlarmService : ISystemAlarmService
 {
-	public void SetAlarm(int hour, int minute, string title)
-	{
-		// Windows не имеет простого API для установки будильника
-		System.Diagnostics.Debug.WriteLine("Установка системного будильника не поддерживается на Windows");
-	}
+    // Метод установки будильника
+    public void SetAlarm(int hour, int minute, CalendarView ev)
+    {
+        System.Diagnostics.Debug.WriteLine($"[Windows Stub] Alarm set for {hour}:{minute} (ID: {ev.ItemId.Id})");
+    }
+
+    // Метод отмены будильника
+    public void CancelAlarm(CalendarView ev)
+    {
+        System.Diagnostics.Debug.WriteLine($"[Windows Stub] Alarm cancelled (ID: {ev.ItemId.Id})");
+    }
 }

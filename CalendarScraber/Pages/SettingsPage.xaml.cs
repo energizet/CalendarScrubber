@@ -38,7 +38,7 @@ public partial class SettingsPage : ContentPage
 		SettingsManager.IsAlarmEnabled = AlarmSwitch.IsToggled;
 		SettingsManager.OnlyActiveEvents = ActiveOnlySwitch.IsToggled;
 
-		if (int.TryParse(MinutesEntry.Text, out int mins))
+		if (int.TryParse(MinutesEntry.Text, out var mins))
 		{
 			SettingsManager.MinutesBefore = mins;
 		}
