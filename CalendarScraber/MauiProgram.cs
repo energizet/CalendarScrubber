@@ -43,7 +43,8 @@ public static class MauiProgram
 
 		builder.Services.AddTransient<LoginPage>();
 		builder.Services.AddTransient<MainPage>();
-		builder.Services.AddTransient<AlarmService>();
+		builder.Services.AddSingleton<CalendarService>();
+		builder.Services.AddSingleton<AlarmService>();
 
 		return builder.Build();
 	}

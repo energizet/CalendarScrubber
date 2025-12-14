@@ -15,7 +15,6 @@ public partial class MainPage : ContentPage
 	private readonly IServiceProvider _serviceProvider;
 	private readonly IForegroundService _foregroundService;
 
-	private readonly System.Timers.Timer _timer;
 	public ObservableCollection<AppLog> Logs { get; set; } = [];
 
 	private bool _isLoginOpen = false;
@@ -27,44 +26,14 @@ public partial class MainPage : ContentPage
 		//RunBtn.IsVisible = true;
 #endif
 		_serviceProvider = serviceProvider;
-		_calendarService = new();
-		_alarmService = new(_serviceProvider.GetRequiredService<ISystemAlarmService>());
+		_calendarService = _serviceProvider.GetRequiredService<CalendarService>();
+		_alarmService = _serviceProvider.GetRequiredService<AlarmService>();
 		_foregroundService = _serviceProvider.GetRequiredService<IForegroundService>();
 
 		RegisterLog();
-
-		_timer = new(60000);
-		_timer.Elapsed += async (s, e) =>
-		{
-			AppLogger.Log("⏳ Тик таймера. Запуск проверки...");
-			await LoadDataAsync();
-		};
+		RegisterUpdate();
+		RegisterLogin();
 	}
-
-	private async Task RestoreSession()
-	{
-		var savedCookies = await CookieStorage.LoadCookies();
-
-
-		var cookiesCollection = savedCookies.GetCookies(new(AppConfig.BaseDomain));
-		var hasAuthToken = false;
-
-		foreach (Cookie c in cookiesCollection)
-		{
-			if (c.Name.Equals(AppConfig.AuthCookieName, StringComparison.OrdinalIgnoreCase))
-			{
-				hasAuthToken = true;
-				break;
-			}
-		}
-
-		if (hasAuthToken)
-		{
-			_calendarService.UpdateCookies(savedCookies);
-			Debug.WriteLine("Session restored from storage.");
-		}
-	}
-
 
 	private async void OnSettingsClicked(object sender, EventArgs e)
 	{
@@ -76,21 +45,7 @@ public partial class MainPage : ContentPage
 	{
 		base.OnAppearing();
 
-		await RestoreSession();
-
-#if ANDROID
-
-		if (!await LocalNotificationCenter.Current.AreNotificationsEnabled())
-		{
-			await LocalNotificationCenter.Current.RequestNotificationPermission();
-		}
-#endif
-		_foregroundService.Start("Календарь", "Служба мониторинга активна");
-
-		_timer.Start();
-
-
-		await LoadDataAsync();
+		_foregroundService.Start("Календарь", "Запуск мониторинга...");
 	}
 
 	private async Task LoadDataAsync()
@@ -115,8 +70,6 @@ public partial class MainPage : ContentPage
 					EventsCollection.ItemsSource = events;
 					StatusLabel.Text = $"Обновлено: {DateTime.UtcNow.ToLocalTime():HH:mm}";
 
-					UpdateNotificationShade(events);
-
 					Task.Run(() =>
 					{
 						_alarmService.ScheduleSystemAlarms(events);
@@ -134,27 +87,6 @@ public partial class MainPage : ContentPage
 		{
 			AppLogger.Log($"💥 Критическая ошибка в LoadData: {ex.Message}");
 			Debug.WriteLine(ex);
-		}
-	}
-
-	private void UpdateNotificationShade(List<CalendarView> events)
-	{
-		var now = DateTime.UtcNow;
-
-		var nextEvent = events
-			.Where(e => e.Start > now && !e.IsCancelled)
-			.MinBy(e => e.Start);
-
-		if (nextEvent != null)
-		{
-			var title = $"Ближайшее: {nextEvent.LocalStart:HH:mm}";
-			_foregroundService.Start(title, nextEvent.DisplaySubject);
-			AppLogger.Log($"🔔 Обновлена шторка: {nextEvent.DisplaySubject}");
-		}
-		else
-		{
-			_foregroundService.Start("Календарь", "Нет предстоящих событий");
-			AppLogger.Log($"🔔 Обновлена шторка: Нет предстоящих событий");
 		}
 	}
 
@@ -213,12 +145,11 @@ public partial class MainPage : ContentPage
 		//await _alarmService.CheckAndTriggerAlarmAsync(events);
 	}
 
-
 	private async void OnLoginClicked(object sender, EventArgs e)
 	{
 		await LoadDataAsync();
 	}
-	
+
 	private void OnToggleLogsClicked(object sender, EventArgs e)
 	{
 		// 1. Инвертируем видимость
@@ -227,7 +158,7 @@ public partial class MainPage : ContentPage
 		// 2. Меняем текст кнопки
 		LogToggleBtn.Text = LogsFrame.IsVisible ? "🔽 Скрыть логи" : "📜 Показать логи";
 	}
-	
+
 	private void RegisterLog()
 	{
 		LogsCollection.ItemsSource = Logs;
@@ -239,9 +170,34 @@ public partial class MainPage : ContentPage
 			{
 				// Добавляем в НАЧАЛО списка, чтобы новые были сверху
 				Logs.Insert(0, log);
-               
+
 				// Ограничим размер лога, чтобы память не текла (например, последние 100)
 				if (Logs.Count > 100) Logs.RemoveAt(Logs.Count - 1);
+			});
+		});
+	}
+
+	private void RegisterLogin()
+	{
+		WeakReferenceMessenger.Default.Register<LoginRequiredMessage>(this, (r, m) =>
+		{
+			MainThread.BeginInvokeOnMainThread(() =>
+			{
+				AppLogger.Log("🔑 MainPage: Получен запрос на вход от сервиса");
+				_ = OpenLoginModal();
+			});
+		});
+	}
+
+	private void RegisterUpdate()
+	{
+		WeakReferenceMessenger.Default.Register<EventsUpdatedMessage>(this, (r, m) =>
+		{
+			MainThread.BeginInvokeOnMainThread(() =>
+			{
+				var events = m.Value;
+				EventsCollection.ItemsSource = events;
+				StatusLabel.Text = $"Обновлено: {DateTime.Now:HH:mm}";
 			});
 		});
 	}
