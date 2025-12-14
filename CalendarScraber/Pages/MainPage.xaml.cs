@@ -15,7 +15,7 @@ public partial class MainPage : ContentPage
 
 	private readonly System.Timers.Timer _timer;
 
-	// Флаг, чтобы не открыть 10 окон авторизации, если таймер тикает
+
 	private bool _isLoginOpen = false;
 
 	public MainPage(IServiceProvider serviceProvider)
@@ -25,22 +25,21 @@ public partial class MainPage : ContentPage
 		//RunBtn.IsVisible = true;
 #endif
 		_serviceProvider = serviceProvider;
-		_calendarService = new CalendarService();
-		_alarmService = new AlarmService(_serviceProvider.GetRequiredService<ISystemAlarmService>());
+		_calendarService = new();
+		_alarmService = new(_serviceProvider.GetRequiredService<ISystemAlarmService>());
 		_foregroundService = _serviceProvider.GetRequiredService<IForegroundService>();
 
-		// Настраиваем таймер (раз в минуту)
-		_timer = new System.Timers.Timer(60000);
+
+		_timer = new(60000);
 		_timer.Elapsed += async (s, e) => await LoadDataAsync();
 	}
 
 	private async Task RestoreSession()
 	{
-		// Загружаем куки из памяти
 		var savedCookies = await CookieStorage.LoadCookies();
 
-		// Проверяем, есть ли там что-то полезное (например, наш токен)
-		var cookiesCollection = savedCookies.GetCookies(new Uri(AppConfig.BaseDomain));
+
+		var cookiesCollection = savedCookies.GetCookies(new(AppConfig.BaseDomain));
 		var hasAuthToken = false;
 
 		foreach (Cookie c in cookiesCollection)
@@ -54,19 +53,18 @@ public partial class MainPage : ContentPage
 
 		if (hasAuthToken)
 		{
-			// Если токен есть, сразу инициализируем клиент
 			_calendarService.UpdateCookies(savedCookies);
 			Debug.WriteLine("Session restored from storage.");
 		}
 	}
 
-	// Обработчик кнопки настроек
+
 	private async void OnSettingsClicked(object sender, EventArgs e)
 	{
 		await Navigation.PushAsync(new SettingsPage());
 	}
 
-	// Метод вызывается при старте приложения
+
 	protected override async void OnAppearing()
 	{
 		base.OnAppearing();
@@ -74,8 +72,8 @@ public partial class MainPage : ContentPage
 		await RestoreSession();
 
 #if ANDROID
-		// Запрос разрешения на уведомления (нужно для Android 13+)
-		if (await LocalNotificationCenter.Current.AreNotificationsEnabled() == false)
+
+		if (!await LocalNotificationCenter.Current.AreNotificationsEnabled())
 		{
 			await LocalNotificationCenter.Current.RequestNotificationPermission();
 		}
@@ -84,32 +82,31 @@ public partial class MainPage : ContentPage
 
 		_timer.Start();
 
-		// Сразу пробуем загрузить данные "не думая"
+
 		await LoadDataAsync();
 	}
 
 	private async Task LoadDataAsync()
 	{
-		// Если окно логина уже открыто, не долбим запросами
 		if (_isLoginOpen) return;
 
 		try
 		{
 			MainThread.BeginInvokeOnMainThread(() => StatusLabel.Text = "Проверка...");
 
-			// 1. Делаем запрос
+
 			var events = await _calendarService.GetEventsAsync();
 
-			// 2. Если успех - обновляем UI
+
 			MainThread.BeginInvokeOnMainThread(() =>
 			{
 				if (events != null)
 				{
 					EventsCollection.ItemsSource = events;
 					StatusLabel.Text = $"Обновлено: {DateTime.UtcNow.ToLocalTime():HH:mm}";
-					
+
 					UpdateNotificationShade(events);
-					
+
 					Task.Run(() =>
 					{
 						_alarmService.ScheduleSystemAlarms(events);
@@ -120,7 +117,6 @@ public partial class MainPage : ContentPage
 		}
 		catch (UnauthorizedAccessException)
 		{
-			// 3. ПОЙМАЛИ 401 -> ЗАПУСКАЕМ АВТОРИЗАЦИЮ
 			await OpenLoginModal();
 		}
 		catch (Exception ex)
@@ -132,14 +128,13 @@ public partial class MainPage : ContentPage
 	private void UpdateNotificationShade(List<CalendarView> events)
 	{
 		var now = DateTime.UtcNow;
-		// Ищем ближайшее будущее событие
+
 		var nextEvent = events
 			.Where(e => e.Start > now && !e.IsCancelled)
 			.MinBy(e => e.Start);
 
 		if (nextEvent != null)
 		{
-			// Обновляем уведомление: "Ближайшее: Совещание в 14:00"
 			var title = $"Ближайшее: {nextEvent.LocalStart:HH:mm}";
 			_foregroundService.Start(title, nextEvent.DisplaySubject);
 		}
@@ -148,36 +143,33 @@ public partial class MainPage : ContentPage
 			_foregroundService.Start("Календарь", "Нет предстоящих событий");
 		}
 	}
-	
+
 	private async Task OpenLoginModal()
 	{
-		// Защита от открытия второго окна
 		if (_isLoginOpen) return;
 		_isLoginOpen = true;
 
-		// Переходим в главный поток, так как работаем с UI
+
 		await MainThread.InvokeOnMainThreadAsync(async () =>
 		{
 			try
 			{
-				// Получаем страницу через DI
 				var loginPage = _serviceProvider.GetRequiredService<LoginPage>();
 
-				// Подписываемся на успех
+
 				loginPage.OnLoginSuccess += async (cookies) =>
 				{
-					// 1. Обновляем куки в сервисе
 					_calendarService.UpdateCookies(cookies);
 
-					// 2. Снимаем флаг блокировки
+
 					_isLoginOpen = false;
 
-					// 3. ПОВТОРЯЕМ ЗАПРОС СРАЗУ ЖЕ
+
 					StatusLabel.Text = "Вход выполнен. Обновление...";
 					await LoadDataAsync();
 				};
 
-				// Показываем окно
+
 				await Navigation.PushModalAsync(loginPage);
 			}
 			catch (Exception ex)
@@ -207,11 +199,9 @@ public partial class MainPage : ContentPage
 		//await _alarmService.CheckAndTriggerAlarmAsync(events);
 	}
 
-	// Обработчик нажатия кнопки из XAML
+
 	private async void OnLoginClicked(object sender, EventArgs e)
 	{
-		// Просто вызываем нашу логику открытия окна или загрузки данных
-		// Если токена нет, OpenLoginModal вызовется внутри LoadDataAsync или можно вызвать напрямую
 		await LoadDataAsync();
 	}
 }

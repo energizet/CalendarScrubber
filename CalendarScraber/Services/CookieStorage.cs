@@ -27,7 +27,7 @@ public static class CookieStorage
 
 			foreach (Cookie c in cookies)
 			{
-				list.Add(new CookieDto
+				list.Add(new()
 				{
 					Name = c.Name,
 					Value = c.Value,

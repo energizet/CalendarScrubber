@@ -7,7 +7,7 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 {
 	// Этот список нужен, чтобы не ставить будильник на одно событие 100 раз
 	// Можно хранить ID событий в Preferences, если нужно сохранять между перезапусками
-	private HashSet<string> _scheduledEvents = new HashSet<string>();
+	private HashSet<string> _scheduledEvents = [];
 
 	public void ScheduleSystemAlarms(List<CalendarView>? events)
 	{
@@ -115,7 +115,7 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 			Title = title,
 			Description = $"{ev.Subject} (Начало: {ev.LocalStart:HH:mm})",
 			BadgeNumber = 1,
-			Schedule = new NotificationRequestSchedule
+			Schedule = new()
 			{
 				NotifyTime = DateTime.Now.AddSeconds(1) // Сработать мгновенно
 			}

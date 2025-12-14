@@ -4,8 +4,7 @@
               android:layout_height="wrap_content"
               android:orientation="horizontal"
               android:padding="16dp"
-              android:background="#512BD4"
-              android:id="@+id/btn_stop">
+              android:background="#512BD4">
     <ImageView
             android:id="@+id/img_icon"
             android:layout_width="40dp"

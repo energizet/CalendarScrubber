@@ -20,7 +20,7 @@ public class ForegroundEventService : Service
 
 		// При нажатии открываем приложение
 		var pendingIntent = PendingIntent.GetActivity(this, 0,
-			new Intent(this, typeof(MainActivity)), PendingIntentFlags.Immutable);
+			new(this, typeof(MainActivity)), PendingIntentFlags.Immutable);
 
 		var notification = new NotificationCompat.Builder(this, "fg_channel_id")
 			.SetContentTitle(title)

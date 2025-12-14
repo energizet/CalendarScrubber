@@ -28,7 +28,7 @@ public class SystemSoundPlayer : ISystemSoundPlayer
             }
 
             // 2. Настраиваем плеер
-            _mediaPlayer = new MediaPlayer();
+            _mediaPlayer = new();
             _mediaPlayer.SetDataSource(Application.Context, alertUri);
 
             // ВАЖНО: Указываем, что это БУДИЛЬНИК. 

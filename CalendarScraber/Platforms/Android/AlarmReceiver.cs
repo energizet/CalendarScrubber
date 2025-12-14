@@ -25,12 +25,11 @@ public class AlarmReceiver : BroadcastReceiver
 		{
 			var json = intent.GetStringExtra("event_json") ?? "";
 			if (string.IsNullOrEmpty(json)) return;
-			var isScreenOn = pm.IsInteractive;
 			
 			var soundPlayer = Application.Current?.Handler?.MauiContext?.Services.GetService<ISystemSoundPlayer>();
 			soundPlayer?.Play();
 
-			ShowNotification(context, json, fullScreen: !isScreenOn);
+			ShowNotification(context, json);
 		}
 		finally
 		{
@@ -38,7 +37,7 @@ public class AlarmReceiver : BroadcastReceiver
 		}
 	}
 
-	private void ShowNotification(Context context, string json, bool fullScreen)
+	private void ShowNotification(Context context, string json)
 	{
 		var ev = JsonSerializer.Deserialize<CalendarView>(json);
 		if (ev == null) return;
@@ -76,7 +75,6 @@ public class AlarmReceiver : BroadcastReceiver
 		// Привязываем данные к элементам XML
 		remoteViews.SetTextViewText(ResourceConstant.Id.txt_time, time);
 		remoteViews.SetTextViewText(ResourceConstant.Id.txt_subject, subject);
-		remoteViews.SetOnClickPendingIntent(ResourceConstant.Id.btn_stop, stopPendingIntent);
 
 		var notificationBuilder = new NotificationCompat.Builder(context, channelId)
 			.SetSmallIcon(Android.Resource.Drawable.IcMenuMyCalendar)
@@ -85,12 +83,9 @@ public class AlarmReceiver : BroadcastReceiver
 			?.SetCategory(NotificationCompat.CategoryAlarm)
 			?.SetAutoCancel(true)
 			?.SetOngoing(true)
-			?.SetVisibility(NotificationCompat.VisibilityPublic);
-
-		if (fullScreen)
-		{
-			notificationBuilder?.SetFullScreenIntent(pendingIntent, highPriority: true);
-		}
+			?.SetVisibility(NotificationCompat.VisibilityPublic)
+			?.SetContentIntent(stopPendingIntent)
+			?.SetFullScreenIntent(pendingIntent, highPriority: true);
 
 		var notificationManager = NotificationManagerCompat.From(context);
 		notificationManager!.Notify(notificationId, notificationBuilder!.Build());

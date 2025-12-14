@@ -2,7 +2,7 @@ namespace CalendarScraber.Models;
 
 public class CalendarResponse
 {
-	public List<CalendarView> Views { get; set; } = new(); // Инициализация
+	public List<CalendarView> Views { get; set; } = []; // Инициализация
 }
 
 public class CalendarView

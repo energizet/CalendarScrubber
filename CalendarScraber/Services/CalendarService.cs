@@ -9,7 +9,7 @@ public class CalendarService
 	private HttpClient _httpClient;
 
 // Опции для десериализации (создаем один раз для оптимизации)
-	private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+	private readonly JsonSerializerOptions _jsonOptions = new()
 	{
 		PropertyNameCaseInsensitive = true // Игнорировать регистр (itemId == ItemId)
 	};
@@ -18,9 +18,9 @@ public class CalendarService
 	{
 		// Инициализируем клиент сразу, даже без кук
 		// BaseDomain берем из конфига
-		_httpClient = new HttpClient
+		_httpClient = new()
 		{
-			BaseAddress = new Uri(AppConfig.BaseDomain)
+			BaseAddress = new(AppConfig.BaseDomain)
 		};
 
 		// Притворяемся браузером сразу
@@ -38,9 +38,9 @@ public class CalendarService
 		};
 
 		// Пересоздаем клиент с новыми куками
-		_httpClient = new HttpClient(handler)
+		_httpClient = new(handler)
 		{
-			BaseAddress = new Uri(AppConfig.BaseDomain)
+			BaseAddress = new(AppConfig.BaseDomain)
 		};
 	}
 
@@ -76,7 +76,7 @@ public class CalendarService
 				var json = await response.Content.ReadAsStringAsync();
 				// 4. ДЕСЕРИАЛИЗАЦИЯ: Регистронезависимая
 				var result = JsonSerializer.Deserialize<CalendarResponse>(json, _jsonOptions);
-				return result?.Views ?? new List<CalendarView>();
+				return result?.Views ?? [];
 			}
 		}
 		catch (HttpRequestException ex)
