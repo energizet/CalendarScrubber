@@ -6,9 +6,9 @@ namespace CalendarScraber;
 public class SystemAlarmService : ISystemAlarmService
 {
     // Метод установки будильника
-    public void SetAlarm(int hour, int minute, CalendarView ev)
+    public void SetAlarm(DateTime alarmTime, CalendarView ev)
     {
-        System.Diagnostics.Debug.WriteLine($"[Windows Stub] Alarm set for {hour}:{minute} (ID: {ev.ItemId.Id})");
+        System.Diagnostics.Debug.WriteLine($"[Windows Stub] Alarm set for {alarmTime} (ID: {ev.ItemId.Id})");
     }
 
     // Метод отмены будильника

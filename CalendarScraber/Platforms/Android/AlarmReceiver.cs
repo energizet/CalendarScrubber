@@ -28,6 +28,7 @@ public class AlarmReceiver : BroadcastReceiver
 			
 			var soundPlayer = Application.Current?.Handler?.MauiContext?.Services.GetService<ISystemSoundPlayer>();
 			soundPlayer?.Play();
+			AppLogger.Log("🎵 Звук запущен");
 
 			ShowNotification(context, json);
 		}
@@ -41,7 +42,9 @@ public class AlarmReceiver : BroadcastReceiver
 	{
 		var ev = JsonSerializer.Deserialize<CalendarView>(json);
 		if (ev == null) return;
-
+		
+		AppLogger.Log($"⏰ СРАБОТАЛ БУДИЛЬНИК: {ev.Subject}");
+		
 		var subject = ev.DisplaySubject;
 		var time = $"{ev.LocalStart:HH:mm}";
 		var notificationId = ev.ItemId.Id.GetHashCode();

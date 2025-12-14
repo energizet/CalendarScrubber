@@ -11,7 +11,15 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 
 	public void ScheduleSystemAlarms(List<CalendarView>? events)
 	{
-		if (!SettingsManager.IsAlarmEnabled || events == null || events.Count == 0) return;
+		if (!SettingsManager.IsAlarmEnabled)
+		{
+			AppLogger.Log("🚫 Будильники отключены в настройках.");
+			return;
+		}
+
+		if (events == null || events.Count == 0) return;
+
+		AppLogger.Log($"⚙️ Анализ {events.Count} событий для будильников...");
 
 		var now = DateTime.Now; // Локальное время
 		var minutesThreshold = SettingsManager.MinutesBefore; // Например, 15 мин
@@ -25,24 +33,31 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 			if (SettingsManager.OnlyActiveEvents && (ev.IsCancelled
 				    || ev.Status == "NoResponseReceived"
 				    || ev.Status == "Tentative"
-			    )) continue;
+			    ))
+			{
+				AppLogger.Log($"Skip {ev.DisplaySubject}: статус {ev.Status}");
+				continue;
+			}
 
 			// Вычисляем время, когда должен зазвенеть будильник
 			// LocalStart (10:00) - 15 минут = 09:45
 			var alarmTime = ev.LocalStart.AddMinutes(-minutesThreshold);
 
 			// Если время будильника уже прошло - пропускаем
-			if (alarmTime < now) continue;
+			if (alarmTime < now)
+			{
+				AppLogger.Log($"Skip {ev.DisplaySubject}: время {alarmTime:HH:mm} уже прошло");
+				continue;
+			}
 
 			// Если до будильника осталось больше 24 часов - тоже можно пропустить пока
 			if ((alarmTime - now).TotalHours > 24) continue;
 
 			// === УСТАНАВЛИВАЕМ БУДИЛЬНИК ===
-			systemAlarmService.SetAlarm(
-				alarmTime.Hour, 
-				alarmTime.Minute, 
-				ev
-			);
+			systemAlarmService.SetAlarm(alarmTime, ev);
+
+			AppLogger.Log(
+				$"⏰ +БУДИЛЬНИК: {ev.DisplaySubject} на {alarmTime:HH:mm} (Старт события: {ev.LocalStart:HH:mm})");
 
 			// Запоминаем, что мы уже поставили будильник на это событие
 			_scheduledEvents.Add(ev.ItemId.Id);
@@ -122,7 +137,7 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 		};
 
 #if ANDROID
-        await LocalNotificationCenter.Current.Show(request);
+		await LocalNotificationCenter.Current.Show(request);
 #endif
 	}
 }

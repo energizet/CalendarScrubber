@@ -3,6 +3,7 @@ using Android.Content;
 using Android.OS;
 using AndroidX.Core.App;
 using Android.Content.PM;
+using CalendarScraber.Services;
 
 namespace CalendarScraber;
 
@@ -15,6 +16,8 @@ public class ForegroundEventService : Service
 	{
 		var title = intent?.GetStringExtra("title") ?? "Календарь";
 		var message = intent?.GetStringExtra("message") ?? "Фоновая работа...";
+		
+		AppLogger.Log($"🛡️ ForegroundService: StartCommand. Title='{title}'");
 
 		CreateNotificationChannel();
 
@@ -44,7 +47,13 @@ public class ForegroundEventService : Service
 
 		return StartCommandResult.Sticky;
 	}
-
+	
+	public override void OnDestroy()
+	{
+		base.OnDestroy();
+		AppLogger.Log("🛑 ForegroundService: Служба уничтожается (OnDestroy)");
+	}
+	
 	private void CreateNotificationChannel()
 	{
 		// Проверка на API 26 не нужна, так как у нас API 29+

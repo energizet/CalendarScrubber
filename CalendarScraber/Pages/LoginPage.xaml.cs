@@ -20,6 +20,8 @@ public partial class LoginPage : ContentPage
 	private async void OnWebViewNavigated(object sender, WebNavigatedEventArgs e)
 	{
 		if (_isSuccessDetected) return;
+		
+		AppLogger.Log($"WebView: Загружено {e.Url}. Ищем куки...");
 
 		// ВМЕСТО проверки URL, мы проверяем наличие "Золотой Куки"
 		// Мы просим экстрактор дать куки для Базового Домена (куда эта кука должна быть установлена)
@@ -31,6 +33,7 @@ public partial class LoginPage : ContentPage
 		if (authCookie != null)
 		{
 			_isSuccessDetected = true;
+			AppLogger.Log($"🎉 КУКА НАЙДЕНА: {authCookie.Name}");
             
 			await CookieStorage.SaveCookies(container, AppConfig.BaseDomain);
 			System.Diagnostics.Debug.WriteLine($"✅ Авторизация успешна! Кука {authCookie.Name} найдена.");

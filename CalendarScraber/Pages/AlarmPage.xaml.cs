@@ -15,7 +15,9 @@ public partial class AlarmPage : ContentPage
 	{
 		_eventData = eventData;
 		InitializeComponent();
-
+		
+		AppLogger.Log($"Открыто окно тревоги: {eventData.Subject}");
+		
 		_soundPlayer = Application.Current?.Handler?.MauiContext?.Services.GetService<ISystemSoundPlayer>();
 		_alarmService = Application.Current?.Handler?.MauiContext?.Services.GetService<ISystemAlarmService>();
 
@@ -25,6 +27,7 @@ public partial class AlarmPage : ContentPage
 
 	private async void OnStopClicked(object sender, EventArgs e)
 	{
+		AppLogger.Log("🔕 Нажата кнопка стоп в приложении");
 		_soundPlayer?.Stop();
 		_alarmService?.CancelNotification(_eventData.ItemId.Id);
 		await Navigation.PopModalAsync();
@@ -34,6 +37,8 @@ public partial class AlarmPage : ContentPage
 	protected override void OnDisappearing()
 	{
 		base.OnDisappearing();
+		
+		AppLogger.Log("🔕 Нажата кнопка Назад на телефоне");
 		_soundPlayer?.Stop();
 		_alarmService?.CancelNotification(_eventData.ItemId.Id);
 	}

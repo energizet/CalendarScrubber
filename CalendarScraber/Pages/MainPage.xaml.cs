@@ -1,7 +1,9 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net;
 using CalendarScraber.Models;
 using CalendarScraber.Services;
+using CommunityToolkit.Mvvm.Messaging;
 using Plugin.LocalNotification;
 
 namespace CalendarScraber.Pages;
@@ -14,7 +16,7 @@ public partial class MainPage : ContentPage
 	private readonly IForegroundService _foregroundService;
 
 	private readonly System.Timers.Timer _timer;
-
+	public ObservableCollection<AppLog> Logs { get; set; } = [];
 
 	private bool _isLoginOpen = false;
 
@@ -29,9 +31,14 @@ public partial class MainPage : ContentPage
 		_alarmService = new(_serviceProvider.GetRequiredService<ISystemAlarmService>());
 		_foregroundService = _serviceProvider.GetRequiredService<IForegroundService>();
 
+		RegisterLog();
 
 		_timer = new(60000);
-		_timer.Elapsed += async (s, e) => await LoadDataAsync();
+		_timer.Elapsed += async (s, e) =>
+		{
+			AppLogger.Log("⏳ Тик таймера. Запуск проверки...");
+			await LoadDataAsync();
+		};
 	}
 
 	private async Task RestoreSession()
@@ -88,20 +95,23 @@ public partial class MainPage : ContentPage
 
 	private async Task LoadDataAsync()
 	{
-		if (_isLoginOpen) return;
+		if (_isLoginOpen)
+		{
+			AppLogger.Log("⏸ Обновление пропущено: открыто окно логина");
+			return;
+		}
 
 		try
 		{
 			MainThread.BeginInvokeOnMainThread(() => StatusLabel.Text = "Проверка...");
 
-
 			var events = await _calendarService.GetEventsAsync();
-
 
 			MainThread.BeginInvokeOnMainThread(() =>
 			{
 				if (events != null)
 				{
+					AppLogger.Log("🎨 Обновление UI списка событий...");
 					EventsCollection.ItemsSource = events;
 					StatusLabel.Text = $"Обновлено: {DateTime.UtcNow.ToLocalTime():HH:mm}";
 
@@ -117,10 +127,12 @@ public partial class MainPage : ContentPage
 		}
 		catch (UnauthorizedAccessException)
 		{
+			AppLogger.Log("🔒 Поймано исключение 401. Открываем вход...");
 			await OpenLoginModal();
 		}
 		catch (Exception ex)
 		{
+			AppLogger.Log($"💥 Критическая ошибка в LoadData: {ex.Message}");
 			Debug.WriteLine(ex);
 		}
 	}
@@ -137,10 +149,12 @@ public partial class MainPage : ContentPage
 		{
 			var title = $"Ближайшее: {nextEvent.LocalStart:HH:mm}";
 			_foregroundService.Start(title, nextEvent.DisplaySubject);
+			AppLogger.Log($"🔔 Обновлена шторка: {nextEvent.DisplaySubject}");
 		}
 		else
 		{
 			_foregroundService.Start("Календарь", "Нет предстоящих событий");
+			AppLogger.Log($"🔔 Обновлена шторка: Нет предстоящих событий");
 		}
 	}
 
@@ -154,17 +168,16 @@ public partial class MainPage : ContentPage
 		{
 			try
 			{
+				AppLogger.Log("🔑 Открытие окна авторизации");
 				var loginPage = _serviceProvider.GetRequiredService<LoginPage>();
-
 
 				loginPage.OnLoginSuccess += async (cookies) =>
 				{
+					AppLogger.Log("✅ LoginSuccess сработал. Сохраняем куки...");
 					_calendarService.UpdateCookies(cookies);
-
-
 					_isLoginOpen = false;
 
-
+					AppLogger.Log("🔄 Повторный запрос данных после входа...");
 					StatusLabel.Text = "Вход выполнен. Обновление...";
 					await LoadDataAsync();
 				};
@@ -174,6 +187,7 @@ public partial class MainPage : ContentPage
 			}
 			catch (Exception ex)
 			{
+				AppLogger.Log($"❌ Ошибка открытия LoginModal: {ex}");
 				Debug.WriteLine($"Ошибка открытия окна: {ex}");
 				_isLoginOpen = false;
 			}
@@ -203,5 +217,32 @@ public partial class MainPage : ContentPage
 	private async void OnLoginClicked(object sender, EventArgs e)
 	{
 		await LoadDataAsync();
+	}
+	
+	private void OnToggleLogsClicked(object sender, EventArgs e)
+	{
+		// 1. Инвертируем видимость
+		LogsFrame.IsVisible = !LogsFrame.IsVisible;
+
+		// 2. Меняем текст кнопки
+		LogToggleBtn.Text = LogsFrame.IsVisible ? "🔽 Скрыть логи" : "📜 Показать логи";
+	}
+	
+	private void RegisterLog()
+	{
+		LogsCollection.ItemsSource = Logs;
+		WeakReferenceMessenger.Default.Register<LogTriggeredMessage>(this, (r, m) =>
+		{
+			var log = m.Value;
+
+			MainThread.BeginInvokeOnMainThread(() =>
+			{
+				// Добавляем в НАЧАЛО списка, чтобы новые были сверху
+				Logs.Insert(0, log);
+               
+				// Ограничим размер лога, чтобы память не текла (например, последние 100)
+				if (Logs.Count > 100) Logs.RemoveAt(Logs.Count - 1);
+			});
+		});
 	}
 }

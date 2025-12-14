@@ -2,7 +2,9 @@
 using Android.App;
 using Android.Content;
 using Android.Content.PM;
+using Android.OS;
 using Android.Views;
+using CalendarScraber.Services;
 using CalendarView = CalendarScraber.Models.CalendarView;
 
 namespace CalendarScraber;
@@ -14,6 +16,12 @@ public class MainActivity : MauiAppCompatActivity
 {
 	public Intent? NewIntent { get; set; }
 
+	protected override void OnCreate(Bundle? savedInstanceState)
+	{
+		base.OnCreate(savedInstanceState);
+		AppLogger.Log("📱 MainActivity: OnCreate");
+	}
+	
 	protected override void OnResume()
 	{
 		base.OnResume();
@@ -23,6 +31,7 @@ public class MainActivity : MauiAppCompatActivity
 	protected override void OnNewIntent(Intent? intent)
 	{
 		base.OnNewIntent(intent);
+		AppLogger.Log("📨 MainActivity: OnNewIntent получен новый интент");
 		NewIntent = intent;
 	}
 
@@ -33,6 +42,8 @@ public class MainActivity : MauiAppCompatActivity
 		if (intent != null && intent.HasExtra("trigger_json"))
 		{
 			var json = intent.GetStringExtra("trigger_json");
+			
+			AppLogger.Log("🎯 MainActivity: Найден ключ 'trigger_json'. Обработка...");
 
 			if (!string.IsNullOrEmpty(json))
 			{
@@ -43,6 +54,8 @@ public class MainActivity : MauiAppCompatActivity
 
 					if (eventData != null)
 					{
+						AppLogger.Log($"🚀 Открытие AlarmPage для: {eventData.Subject}");
+						
 						MainThread.BeginInvokeOnMainThread(() =>
 						{
 							Shell.Current?.Navigation.PushModalAsync(new Pages.AlarmPage(eventData));
@@ -54,6 +67,7 @@ public class MainActivity : MauiAppCompatActivity
 				}
 				catch (Exception ex)
 				{
+					AppLogger.Log($"❌ MainActivity Ошибка десериализации: {ex.Message}");
 					System.Diagnostics.Debug.WriteLine($"Ошибка десериализации в MainActivity: {ex}");
 				}
 			}

@@ -10,18 +10,24 @@ public class AppService : IForegroundService
 	public void Start(string title, string message)
 	{
 		CheckOverlayPermission();
+		
+		AppLogger.Log($"🚀 AppService: Запрос запуска. Title='{title}'");
 
 		var intent = new Intent(Application.Context, typeof(ForegroundEventService));
 		intent.PutExtra("title", title);
 		intent.PutExtra("message", message);
 
 		Application.Context.StartForegroundService(intent);
+		
+		AppLogger.Log("✅ AppService: StartForegroundService отправлен");
 	}
 
 	private void CheckOverlayPermission()
 	{
 		if (!Settings.CanDrawOverlays(Application.Context))
 		{
+			AppLogger.Log("⚠️ AppService: Нет прав на Overlay! Открываем настройки...");
+			
 			// Если разрешения нет - отправляем пользователя в настройки
 			var intent = new Intent(Settings.ActionManageOverlayPermission,
 				Android.Net.Uri.Parse("package:" + Application.Context.PackageName));
@@ -32,6 +38,7 @@ public class AppService : IForegroundService
 
 	public void Stop()
 	{
+		AppLogger.Log("🛑 AppService: Запрос остановки сервиса");
 		var intent = new Intent(Application.Context, typeof(ForegroundEventService));
 		Application.Context.StopService(intent);
 	}

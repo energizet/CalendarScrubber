@@ -15,6 +15,8 @@ public class StopAlarmReceiver : BroadcastReceiver
 
 		try
 		{
+			AppLogger.Log("🔔 Нажата кнопка СТОП в уведомлении");
+			
 			var soundPlayer = Application.Current?.Handler?.MauiContext?.Services.GetService<ISystemSoundPlayer>();
 			soundPlayer?.Stop();
 

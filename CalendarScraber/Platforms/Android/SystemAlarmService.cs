@@ -10,15 +10,21 @@ namespace CalendarScraber;
 
 public class SystemAlarmService : ISystemAlarmService
 {
-    public void SetAlarm(int hour, int minute, CalendarView ev)
+    public void SetAlarm(DateTime alarmTime, CalendarView ev)
     {
         var calendar = Java.Util.Calendar.Instance;
         calendar.TimeInMillis = Java.Lang.JavaSystem.CurrentTimeMillis();
-        calendar.Set(Java.Util.CalendarField.HourOfDay, hour);
-        calendar.Set(Java.Util.CalendarField.Minute, minute);
-        calendar.Set(Java.Util.CalendarField.Second, 0);
+        calendar.Set(
+            alarmTime.Year, 
+            alarmTime.Month - 1, 
+            alarmTime.Day, 
+            alarmTime.Hour, 
+            alarmTime.Minute, 
+            0
+        );
+        calendar.Set(Java.Util.CalendarField.Millisecond, 0);
 
-        // Если время прошло, будильник сработает сразу (или можно добавить день)
+        AppLogger.Log($"Android SetAlarm: {alarmTime:dd.MM.yyyy HH:mm} (Java Millis: {calendar.TimeInMillis})");
         
         var intent = new Intent(Application.Context, typeof(AlarmReceiver));
         // Кладем только JSON. ID нам тут нужен только для RequestCode
@@ -37,6 +43,8 @@ public class SystemAlarmService : ISystemAlarmService
         var manager = (AlarmManager)Application.Context.GetSystemService(Context.AlarmService)!;
         var alarmClockInfo = new AlarmManager.AlarmClockInfo(calendar.TimeInMillis, pendingIntent);
         manager.SetAlarmClock(alarmClockInfo, pendingIntent);
+        
+        AppLogger.Log($"Android AlarmManager: установлен ID={ev.ItemId.Id.GetHashCode()}");
     }
 
     public void CancelAlarm(CalendarView ev)
@@ -54,6 +62,8 @@ public class SystemAlarmService : ISystemAlarmService
             manager.Cancel(pendingIntent);
             pendingIntent.Cancel();
         }
+        
+        AppLogger.Log($"Android AlarmManager: отменен ID={ev.ItemId.Id.GetHashCode()}");
     }
     
     public void CancelNotification(string eventId)
@@ -63,5 +73,7 @@ public class SystemAlarmService : ISystemAlarmService
 
         var manager = NotificationManagerCompat.From(Application.Context);
         manager?.Cancel(notificationId);
+        
+        AppLogger.Log($"Уведомление убрано для {eventId.GetHashCode()}");
     }
 }

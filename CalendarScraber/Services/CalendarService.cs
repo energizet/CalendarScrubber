@@ -60,13 +60,18 @@ public class CalendarService
 			var endParam = WebUtility.UrlEncode(endUtc.ToString(format));
 
 			var url = $"{AppConfig.CalendarEndpoint}?start={startParam}&end={endParam}";
+			
+			AppLogger.Log($"🌍 Запрос данных: {url}");
 
 			var response = await _httpClient.GetAsync(url);
+			
+			AppLogger.Log($"📡 Ответ сервера: {response.StatusCode}");
 
 			// ГЛАВНОЕ ИЗМЕНЕНИЕ: Проверка статуса
 			if (response.StatusCode == HttpStatusCode.Unauthorized ||
 			    response.StatusCode == HttpStatusCode.Forbidden)
 			{
+				AppLogger.Log("❌ Ошибка авторизации (401/403)");
 				// Выбрасываем специальное исключение, которое поймает MainPage
 				throw new UnauthorizedAccessException("Требуется авторизация");
 			}
@@ -74,17 +79,22 @@ public class CalendarService
 			if (response.IsSuccessStatusCode)
 			{
 				var json = await response.Content.ReadAsStringAsync();
+				AppLogger.Log($"📦 Получено {json.Length} байт. Десериализация...");
 				// 4. ДЕСЕРИАЛИЗАЦИЯ: Регистронезависимая
 				var result = JsonSerializer.Deserialize<CalendarResponse>(json, _jsonOptions);
+				AppLogger.Log($"✅ Найдено событий: {result?.Views.Count ?? 0}");
 				return result?.Views ?? [];
 			}
+			AppLogger.Log($"⚠️ Ошибка сервера: {response.StatusCode}");
 		}
 		catch (HttpRequestException ex)
 		{
+			AppLogger.Log($"💀 Ошибка сети: {ex.Message}");
 			System.Diagnostics.Debug.WriteLine($"Network error: {ex.Message}");
 		}
 		catch (JsonException ex) // Ловим ошибки парсинга JSON
 		{
+			AppLogger.Log($"💩 Ошибка JSON: {ex.Message}");
 			System.Diagnostics.Debug.WriteLine($"JSON parse error: {ex.Message}");
 		}
 
