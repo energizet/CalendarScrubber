@@ -22,7 +22,7 @@
         <ApplicationTitle>CalendarScraber</ApplicationTitle>
 
         <!-- App Identifier -->
-        <ApplicationId>com.companyname.calendarscraber</ApplicationId>
+        <ApplicationId>ru.energizet.calendarscraber</ApplicationId>
 
         <!-- Versions -->
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>

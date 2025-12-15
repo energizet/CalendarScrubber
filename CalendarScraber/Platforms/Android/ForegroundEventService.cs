@@ -38,72 +38,91 @@ public class ForegroundEventService : Service
 		// 1. Показываем уведомление, чтобы Android не убил нас
 		StartForegroundNotification(title, "Ожидание данных...");
 
+		RegisterUpdate();
+
 		// 2. Запускаем бесконечный цикл обновления в отдельном потоке
 		Task.Run(async () => await UpdateLoopAsync(_cts.Token));
 
 		return StartCommandResult.Sticky;
 	}
 
+	public void RegisterUpdate()
+	{
+		WeakReferenceMessenger.Default.Register<UpdateMessage>(this, (r, m) =>
+		{
+			MainThread.BeginInvokeOnMainThread(() =>
+			{
+				AppLogger.Log("🛡️ ForegroundService: Получен запрос на обновление");
+				_ = UpdateAsync();
+			});
+		});
+	}
+
 	private async Task UpdateLoopAsync(CancellationToken token)
 	{
 		while (!token.IsCancellationRequested)
 		{
-			var services = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services;
-			var calendarService = services?.GetService<CalendarService>();
-			var alarmService = services?.GetService<AlarmService>();
-			try
-			{
-				AppLogger.Log("🔄 Service: Начало цикла проверки...");
-
-				if (calendarService != null && alarmService != null)
-				{
-					await RestoreSession(calendarService);
-
-					var events = await calendarService.GetEventsAsync();
-
-					if (events != null)
-					{
-						AppLogger.Log($"✅ Service: Получено {events.Count} событий.");
-
-						// 2. ОБНОВЛЕНИЕ БУДИЛЬНИКОВ
-						alarmService.ScheduleSystemAlarms(events);
-
-						// 3. ОТПРАВКА ДАННЫХ В UI (если приложение открыто)
-						WeakReferenceMessenger.Default.Send(new EventsUpdatedMessage(events));
-
-						// 4. ОБНОВЛЕНИЕ ТЕКСТА В ШТОРКЕ
-						UpdateNotificationShade(events);
-					}
-					else
-					{
-						AppLogger.Log("⚠️ Service: Не удалось получить события (null).");
-					}
-				}
-			}
-			catch (UnauthorizedAccessException)
-			{
-				AppLogger.Log("🔒 Service: Ошибка 401. Требуется авторизация!");
-
-				// 1. МЕНЯЕМ УВЕДОМЛЕНИЕ В ШТОРКЕ
-				// Чтобы пользователь видел, почему данные не идут
-				var notificationManager = GetSystemService(NotificationService) as NotificationManager;
-				var notification = CreateNotification("Календарь", "⚠️ Требуется авторизация. Нажмите для входа.");
-				notificationManager?.Notify(GetHashCode(), notification);
-
-				// 2. ОТПРАВЛЯЕМ СООБЩЕНИЕ В UI (Если приложение открыто)
-				WeakReferenceMessenger.Default.Send(new LoginRequiredMessage());
-
-				HasAuthToken = false;
-				calendarService?.UpdateCookies(new());
-			}
-			catch (Exception ex)
-			{
-				AppLogger.Log($"❌ Service Error: {ex.Message}");
-			}
+			await UpdateAsync();
 
 			// Ждем 1 минуту перед следующим обновлением
 			AppLogger.Log("💤 Service: Сон 60 сек...");
 			await Task.Delay(60000, token);
+		}
+	}
+
+	private async Task UpdateAsync()
+	{
+		var services = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services;
+		var calendarService = services?.GetService<CalendarService>();
+		var alarmService = services?.GetService<AlarmService>();
+		try
+		{
+			AppLogger.Log("🔄 Service: Начало цикла проверки...");
+
+			if (calendarService != null && alarmService != null)
+			{
+				await RestoreSession(calendarService);
+
+				var events = await calendarService.GetEventsAsync();
+
+				if (events != null)
+				{
+					AppLogger.Log($"✅ Service: Получено {events.Count} событий.");
+
+					// 2. ОБНОВЛЕНИЕ БУДИЛЬНИКОВ
+					alarmService.ScheduleSystemAlarms(events);
+
+					// 3. ОТПРАВКА ДАННЫХ В UI (если приложение открыто)
+					WeakReferenceMessenger.Default.Send(new EventsUpdatedMessage(events));
+
+					// 4. ОБНОВЛЕНИЕ ТЕКСТА В ШТОРКЕ
+					UpdateNotificationShade(events);
+				}
+				else
+				{
+					AppLogger.Log("⚠️ Service: Не удалось получить события (null).");
+				}
+			}
+		}
+		catch (UnauthorizedAccessException)
+		{
+			AppLogger.Log("🔒 Service: Ошибка 401. Требуется авторизация!");
+
+			// 1. МЕНЯЕМ УВЕДОМЛЕНИЕ В ШТОРКЕ
+			// Чтобы пользователь видел, почему данные не идут
+			var notificationManager = GetSystemService(NotificationService) as NotificationManager;
+			var notification = CreateNotification("Календарь", "⚠️ Требуется авторизация. Нажмите для входа.");
+			notificationManager?.Notify(GetHashCode(), notification);
+
+			HasAuthToken = false;
+			calendarService?.UpdateCookies(new());
+
+			// 2. ОТПРАВЛЯЕМ СООБЩЕНИЕ В UI (Если приложение открыто)
+			WeakReferenceMessenger.Default.Send(new LoginRequiredMessage());
+		}
+		catch (Exception ex)
+		{
+			AppLogger.Log($"❌ Service Error: {ex.Message}");
 		}
 	}
 

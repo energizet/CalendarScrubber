@@ -48,7 +48,7 @@ public partial class MainPage : ContentPage
 		_foregroundService.Start("Календарь", "Запуск мониторинга...");
 	}
 
-	private async Task LoadDataAsync()
+	private void LoadDataAsync()
 	{
 		if (_isLoginOpen)
 		{
@@ -56,38 +56,7 @@ public partial class MainPage : ContentPage
 			return;
 		}
 
-		try
-		{
-			MainThread.BeginInvokeOnMainThread(() => StatusLabel.Text = "Проверка...");
-
-			var events = await _calendarService.GetEventsAsync();
-
-			MainThread.BeginInvokeOnMainThread(() =>
-			{
-				if (events != null)
-				{
-					AppLogger.Log("🎨 Обновление UI списка событий...");
-					EventsCollection.ItemsSource = events;
-					StatusLabel.Text = $"Обновлено: {DateTime.UtcNow.ToLocalTime():HH:mm}";
-
-					Task.Run(() =>
-					{
-						_alarmService.ScheduleSystemAlarms(events);
-						//await _alarmService.CheckAndTriggerAlarmAsync(events);
-					});
-				}
-			});
-		}
-		catch (UnauthorizedAccessException)
-		{
-			AppLogger.Log("🔒 Поймано исключение 401. Открываем вход...");
-			await OpenLoginModal();
-		}
-		catch (Exception ex)
-		{
-			AppLogger.Log($"💥 Критическая ошибка в LoadData: {ex.Message}");
-			Debug.WriteLine(ex);
-		}
+		WeakReferenceMessenger.Default.Send(new UpdateMessage());
 	}
 
 	private async Task OpenLoginModal()
@@ -103,7 +72,7 @@ public partial class MainPage : ContentPage
 				AppLogger.Log("🔑 Открытие окна авторизации");
 				var loginPage = _serviceProvider.GetRequiredService<LoginPage>();
 
-				loginPage.OnLoginSuccess += async (cookies) =>
+				loginPage.OnLoginSuccess += (cookies) =>
 				{
 					AppLogger.Log("✅ LoginSuccess сработал. Сохраняем куки...");
 					_calendarService.UpdateCookies(cookies);
@@ -111,7 +80,7 @@ public partial class MainPage : ContentPage
 
 					AppLogger.Log("🔄 Повторный запрос данных после входа...");
 					StatusLabel.Text = "Вход выполнен. Обновление...";
-					await LoadDataAsync();
+					LoadDataAsync();
 				};
 
 
@@ -145,9 +114,9 @@ public partial class MainPage : ContentPage
 		//await _alarmService.CheckAndTriggerAlarmAsync(events);
 	}
 
-	private async void OnLoginClicked(object sender, EventArgs e)
-	{
-		await LoadDataAsync();
+	private void OnLoginClicked(object sender, EventArgs e)
+	{ 
+		LoadDataAsync();
 	}
 
 	private void OnToggleLogsClicked(object sender, EventArgs e)

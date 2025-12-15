@@ -61,8 +61,6 @@ public class MainActivity : MauiAppCompatActivity
 							Shell.Current?.Navigation.PushModalAsync(new Pages.AlarmPage(eventData));
 							NewIntent = null;
 						});
-						// Отправляем уже готовый объект!
-						//WeakReferenceMessenger.Default.Send(new AlarmTriggeredMessage(eventData));
 					}
 				}
 				catch (Exception ex)
