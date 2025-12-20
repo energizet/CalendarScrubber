@@ -5,13 +5,13 @@ namespace CalendarScrubber.Services;
 public interface IEventStorage
 {
 	// Сохраняет (перезаписывает) список событий
-	Task SaveEventsAsync(List<CalendarView> events);
+	void SaveEvents(List<CalendarView> events);
 
 	// Возвращает все события (из памяти или загружает с диска)
-	Task<List<CalendarView>> GetAllEventsAsync();
+	List<CalendarView> GetAllEvents();
 
 	// Возвращает одно событие по ID
-	Task<CalendarView?> GetEventAsync(string eventId);
+	CalendarView? GetEvent(string eventId);
 
 	// Удаляет все события
 	void ClearEvents();

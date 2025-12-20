@@ -92,7 +92,7 @@ public class ForegroundEventService : Service
 					AppLogger.Log($"✅ Service: Получено {events.Count} событий.");
 
 					// 2. ОБНОВЛЕНИЕ БУДИЛЬНИКОВ
-					await _alarmService.ScheduleSystemAlarms(events);
+					_alarmService.ScheduleSystemAlarms(events);
 
 					// 3. ОТПРАВКА ДАННЫХ В UI (если приложение открыто)
 					WeakReferenceMessenger.Default.Send(new EventsUpdatedMessage(events));

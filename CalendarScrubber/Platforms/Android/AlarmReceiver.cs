@@ -30,7 +30,7 @@ public class AlarmReceiver : BroadcastReceiver
 
 			var service = Application.Current?.Handler?.MauiContext?.Services;
 			_eventStorage ??= service?.GetService<IEventStorage>();
-			var ev = await (_eventStorage?.GetEventAsync(id) ?? Task.FromResult<CalendarView?>(null));
+			var ev =  _eventStorage?.GetEvent(id);
 			if (ev == null) return;
 
 			_soundPlayer ??= service?.GetService<ISystemSoundPlayer>();

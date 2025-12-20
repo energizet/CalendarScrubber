@@ -46,7 +46,7 @@ public partial class MainPage : ContentPage
 	{
 		base.OnAppearing();
 
-		var cachedEvents = await _eventStorage.GetAllEventsAsync();
+		var cachedEvents = _eventStorage.GetAllEvents();
 
 		if (cachedEvents.Count > 0)
 		{
@@ -104,7 +104,7 @@ public partial class MainPage : ContentPage
 		});
 	}
 
-	private async void RunClicked(object sender, EventArgs e)
+	private void RunClicked(object sender, EventArgs e)
 	{
 		var id = Random.Shared.Next(0, 100);
 		var ev = new Models_CalendarView
@@ -119,7 +119,7 @@ public partial class MainPage : ContentPage
 		};
 		var events = (List<Models_CalendarView>)[ev];
 		EventsCollection.ItemsSource = events;
-		await _alarmService.ScheduleSystemAlarms(events);
+		_alarmService.ScheduleSystemAlarms(events);
 		//await _alarmService.CheckAndTriggerAlarmAsync(events);
 	}
 

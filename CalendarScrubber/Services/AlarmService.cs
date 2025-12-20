@@ -5,7 +5,7 @@ namespace CalendarScrubber.Services;
 
 public class AlarmService(ISystemAlarmService systemAlarmService, IEventStorage eventStorage)
 {
-	public async Task ScheduleSystemAlarms(List<CalendarView>? events)
+	public void ScheduleSystemAlarms(List<CalendarView>? events)
 	{
 		if (!SettingsManager.IsAlarmEnabled)
 		{
@@ -15,8 +15,8 @@ public class AlarmService(ISystemAlarmService systemAlarmService, IEventStorage 
 
 		if (events == null) return;
 
-		await ClearAlarms();
-		await eventStorage.SaveEventsAsync(events);
+		ClearAlarms();
+		eventStorage.SaveEvents(events);
 
 		if (events.Count == 0) return;
 
@@ -68,11 +68,11 @@ public class AlarmService(ISystemAlarmService systemAlarmService, IEventStorage 
 		}
 	}
 
-	private async Task ClearAlarms()
+	private void ClearAlarms()
 	{
 		AppLogger.Log("⚙️ Очистка будильников...");
 
-		var events = await eventStorage.GetAllEventsAsync();
+		var events = eventStorage.GetAllEvents();
 
 		foreach (var ev in events)
 		{

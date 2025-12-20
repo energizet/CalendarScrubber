@@ -3,7 +3,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="CalendarScrubber.Pages.AlarmPage"
-             BackgroundColor="#D32F2F"
+             BackgroundColor="{AppThemeBinding Light=#D32F2F, Dark=#B71C1C}"
              Title="Alarm">
     <NavigationPage.HasNavigationBar>False</NavigationPage.HasNavigationBar>
 
@@ -18,7 +18,8 @@
         </VerticalStackLayout>
 
         <Button Grid.Row="2" Text="ОСТАНОВИТЬ" Clicked="OnStopClicked"
-                BackgroundColor="White" TextColor="#D32F2F"
+                BackgroundColor="{AppThemeBinding Light=White, Dark=#333}"
+                TextColor="{AppThemeBinding Light=#D32F2F, Dark=#FF5252}"
                 FontSize="24" FontAttributes="Bold" HeightRequest="80" CornerRadius="40" />
     </Grid>
 </ContentPage>

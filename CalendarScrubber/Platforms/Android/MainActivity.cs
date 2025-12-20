@@ -52,7 +52,7 @@ public class MainActivity : MauiAppCompatActivity
 				try
 				{
 					// ДЕСЕРИАЛИЗАЦИЯ ПРЯМО ЗДЕСЬ
-					var eventData = await (_eventStorage?.GetEventAsync(id) ?? Task.FromResult<CalendarView?>(null));
+					var eventData = _eventStorage?.GetEvent(id);
 
 					if (eventData != null)
 					{
