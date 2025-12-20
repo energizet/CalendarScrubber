@@ -15,8 +15,6 @@ public class AppService : IForegroundService
 			await LocalNotificationCenter.Current.RequestNotificationPermission();
 		}
 
-		CheckOverlayPermission();
-
 		AppLogger.Log($"🚀 AppService: Запрос запуска. Title='{title}'");
 
 		var intent = new Intent(Application.Context, typeof(ForegroundEventService));
@@ -26,20 +24,6 @@ public class AppService : IForegroundService
 		Application.Context.StartForegroundService(intent);
 
 		AppLogger.Log("✅ AppService: StartForegroundService отправлен");
-	}
-
-	private void CheckOverlayPermission()
-	{
-		if (!Settings.CanDrawOverlays(Application.Context))
-		{
-			AppLogger.Log("⚠️ AppService: Нет прав на Overlay! Открываем настройки...");
-
-			// Если разрешения нет - отправляем пользователя в настройки
-			var intent = new Intent(Settings.ActionManageOverlayPermission,
-				Android.Net.Uri.Parse("package:" + Application.Context.PackageName));
-			intent.AddFlags(ActivityFlags.NewTask);
-			Application.Context.StartActivity(intent);
-		}
 	}
 
 	public void Stop()

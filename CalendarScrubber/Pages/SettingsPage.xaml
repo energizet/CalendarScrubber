@@ -48,5 +48,11 @@
                TextColor="Gray"
                FontSize="12" />
 
+        <Button Text="🛠 Проверить разрешения Android" 
+                Clicked="OnCheckPermissionsClicked"
+                BackgroundColor="#FF9800" TextColor="White"
+                FontAttributes="Bold"
+                Margin="0,0,0,10"/>
+        
     </VerticalStackLayout>
 </ContentPage>

@@ -30,11 +30,13 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ISystemAlarmService, SystemAlarmService>();
 		builder.Services.AddSingleton<IForegroundService, AppService>();
 		builder.Services.AddSingleton<ISystemSoundPlayer, SystemSoundPlayer>();
+		builder.Services.AddSingleton<IPermissionHelper, PermissionHelper>();
 #elif WINDOWS
         builder.Services.AddSingleton<ICookieExtractor, CookieExtractor>();
         builder.Services.AddSingleton<ISystemAlarmService, SystemAlarmService>();
         builder.Services.AddSingleton<IForegroundService, AppService>();
         builder.Services.AddSingleton<ISystemSoundPlayer, SystemSoundPlayer>();
+        builder.Services.AddSingleton<IPermissionHelper, PermissionHelper>();
 #endif
 
 #if DEBUG

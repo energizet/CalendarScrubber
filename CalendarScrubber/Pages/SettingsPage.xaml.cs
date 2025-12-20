@@ -5,11 +5,13 @@ namespace CalendarScrubber.Pages;
 public partial class SettingsPage : ContentPage
 {
 	private bool _isLoading = false;
+	private readonly IServiceProvider _serviceProvider;
 
-	public SettingsPage()
+	public SettingsPage(IServiceProvider serviceProvider)
 	{
 		InitializeComponent();
 		LoadSettings();
+		_serviceProvider = serviceProvider;
 	}
 
 	private void LoadSettings()
@@ -42,5 +44,10 @@ public partial class SettingsPage : ContentPage
 		{
 			SettingsManager.MinutesBefore = mins;
 		}
+	}
+	
+	private async void OnCheckPermissionsClicked(object sender, EventArgs e)
+	{
+		await Navigation.PushAsync(new PermissionsPage(_serviceProvider));
 	}
 }

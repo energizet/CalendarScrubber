@@ -38,7 +38,7 @@ public partial class MainPage : ContentPage
 
 	private async void OnSettingsClicked(object sender, EventArgs e)
 	{
-		await Navigation.PushAsync(new SettingsPage());
+		await Navigation.PushAsync(new SettingsPage(_serviceProvider));
 	}
 
 
