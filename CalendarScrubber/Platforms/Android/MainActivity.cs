@@ -1,32 +1,33 @@
-﻿using System.Text.Json;
-using Android.App;
+﻿using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
+using CalendarScrubber.Models;
 using CalendarScrubber.Services;
 
 namespace CalendarScrubber;
-
-using CalendarView = Models.CalendarView;
 
 [Activity(Theme = "@style/Maui.SplashTheme", MainLauncher = true, LaunchMode = LaunchMode.SingleTop,
 	ConfigurationChanges = ConfigChanges.ScreenSize | ConfigChanges.Orientation | ConfigChanges.UiMode |
 		ConfigChanges.ScreenLayout | ConfigChanges.SmallestScreenSize | ConfigChanges.Density)]
 public class MainActivity : MauiAppCompatActivity
 {
+	private IEventStorage? _eventStorage;
 	public Intent? NewIntent { get; set; }
 
 	protected override void OnCreate(Bundle? savedInstanceState)
 	{
 		base.OnCreate(savedInstanceState);
 		AppLogger.Log("📱 MainActivity: OnCreate");
+		var service = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services;
+		_eventStorage = service?.GetService<IEventStorage>();
 	}
 	
-	protected override void OnResume()
+	protected override async void OnResume()
 	{
 		base.OnResume();
-		ProcessIncomingIntent(NewIntent);
+		await ProcessIncomingIntent(NewIntent);
 	}
 
 	protected override void OnNewIntent(Intent? intent)
@@ -36,22 +37,22 @@ public class MainActivity : MauiAppCompatActivity
 		NewIntent = intent;
 	}
 
-	private void ProcessIncomingIntent(Intent? intent)
+	private async Task ProcessIncomingIntent(Intent? intent)
 	{
 		TurnOnScreen();
 
-		if (intent != null && intent.HasExtra("trigger_json"))
+		if (intent != null && intent.HasExtra("trigger_id"))
 		{
-			var json = intent.GetStringExtra("trigger_json");
+			var id = intent.GetStringExtra("trigger_id");
 			
-			AppLogger.Log("🎯 MainActivity: Найден ключ 'trigger_json'. Обработка...");
+			AppLogger.Log("🎯 MainActivity: Найден ключ 'trigger_id'. Обработка...");
 
-			if (!string.IsNullOrEmpty(json))
+			if (!string.IsNullOrEmpty(id))
 			{
 				try
 				{
 					// ДЕСЕРИАЛИЗАЦИЯ ПРЯМО ЗДЕСЬ
-					var eventData = JsonSerializer.Deserialize<CalendarView>(json);
+					var eventData = await (_eventStorage?.GetEventAsync(id) ?? Task.FromResult<CalendarView?>(null));
 
 					if (eventData != null)
 					{

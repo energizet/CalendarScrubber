@@ -87,6 +87,6 @@ public static class CookieStorage
 	// === ОЧИСТКА (ВЫХОД) ===
 	public static void ClearCookies()
 	{
-		Preferences.Remove(CookiesKey);
+		SecureStorage.Remove(CookiesKey);
 	}
 }

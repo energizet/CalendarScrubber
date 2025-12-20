@@ -45,6 +45,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<MainPage>();
 		builder.Services.AddSingleton<CalendarService>();
 		builder.Services.AddSingleton<AlarmService>();
+		builder.Services.AddSingleton<IEventStorage, EventStorage>();
 
 		return builder.Build();
 	}

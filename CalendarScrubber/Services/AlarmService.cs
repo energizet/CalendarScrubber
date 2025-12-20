@@ -3,13 +3,9 @@ using Plugin.LocalNotification;
 
 namespace CalendarScrubber.Services;
 
-public class AlarmService(ISystemAlarmService systemAlarmService)
+public class AlarmService(ISystemAlarmService systemAlarmService, IEventStorage eventStorage)
 {
-	// Этот список нужен, чтобы не ставить будильник на одно событие 100 раз
-	// Можно хранить ID событий в Preferences, если нужно сохранять между перезапусками
-	private HashSet<string> _scheduledEvents = [];
-
-	public void ScheduleSystemAlarms(List<CalendarView>? events)
+	public async Task ScheduleSystemAlarms(List<CalendarView>? events)
 	{
 		if (!SettingsManager.IsAlarmEnabled)
 		{
@@ -17,17 +13,23 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 			return;
 		}
 
-		if (events == null || events.Count == 0) return;
+		if (events == null) return;
+
+		await ClearAlarms();
+		await eventStorage.SaveEventsAsync(events);
+
+		if (events.Count == 0) return;
 
 		AppLogger.Log($"⚙️ Анализ {events.Count} событий для будильников...");
 
 		var now = DateTime.Now; // Локальное время
 		var minutesThreshold = SettingsManager.MinutesBefore; // Например, 15 мин
 
+		var scheduledEvents = new HashSet<string>();
 		foreach (var ev in events)
 		{
 			// Уникальный ID для отслеживания
-			if (_scheduledEvents.Contains(ev.ItemId.Id)) continue;
+			if (scheduledEvents.Contains(ev.ItemId.Id)) continue;
 
 			// Пропускаем отмененные
 			if (SettingsManager.OnlyActiveEvents && (ev.IsCancelled
@@ -60,9 +62,21 @@ public class AlarmService(ISystemAlarmService systemAlarmService)
 				$"⏰ +БУДИЛЬНИК: {ev.DisplaySubject} на {alarmTime:HH:mm} (Старт события: {ev.LocalStart:HH:mm})");
 
 			// Запоминаем, что мы уже поставили будильник на это событие
-			_scheduledEvents.Add(ev.ItemId.Id);
+			scheduledEvents.Add(ev.ItemId.Id);
 
 			System.Diagnostics.Debug.WriteLine($"Будильник установлен на {alarmTime:HH:mm} для {ev.Subject}");
+		}
+	}
+
+	private async Task ClearAlarms()
+	{
+		AppLogger.Log("⚙️ Очистка будильников...");
+
+		var events = await eventStorage.GetAllEventsAsync();
+
+		foreach (var ev in events)
+		{
+			systemAlarmService.CancelAlarm(ev.ItemId.Id);
 		}
 	}
 

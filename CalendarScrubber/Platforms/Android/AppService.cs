@@ -8,7 +8,7 @@ namespace CalendarScrubber;
 
 public class AppService : IForegroundService
 {
-	public async void Start(string title, string message)
+	public async Task Start(string title, string message)
 	{
 		if (!await LocalNotificationCenter.Current.AreNotificationsEnabled())
 		{
