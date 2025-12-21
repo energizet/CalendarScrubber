@@ -165,7 +165,11 @@ public class ForegroundEventService : Service
 		Notification notification;
 		if (nextEvent != null)
 		{
-			var title = $"Ближайшее: {nextEvent.LocalStart:HH:mm}";
+			var datePrefix = string.IsNullOrEmpty(nextEvent.DisplayDate)
+				? ""
+				: $"{nextEvent.DisplayDate} ";
+
+			var title = $"Ближайшее: {datePrefix}{nextEvent.LocalStart:HH:mm}";
 			notification = CreateNotification(title, nextEvent.DisplaySubject);
 			AppLogger.Log($"🔔 Обновлена шторка: {nextEvent.DisplaySubject}");
 		}

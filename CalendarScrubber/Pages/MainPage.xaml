@@ -96,6 +96,13 @@
                         <Grid ColumnDefinitions="70, *" RowDefinitions="Auto, Auto, Auto">
 
                             <VerticalStackLayout Grid.Column="0" Grid.RowSpan="3" VerticalOptions="Start">
+                                <Label Text="{Binding DisplayDate}"
+                                       IsVisible="{Binding DisplayDate, Converter={StaticResource IsNotNullOrEmptyConverter}}"
+                                       FontSize="11"
+                                       FontAttributes="Bold"
+                                       TextColor="{AppThemeBinding Light=#D32F2F, Dark=#FF5252}" 
+                                       HorizontalOptions="Start"
+                                       Margin="0,0,0,2"/>
                                 <Label Text="{Binding LocalStart, StringFormat='{0:HH:mm}'}"
                                        TextColor="{Binding TimeColor}"
                                        FontAttributes="Bold"
