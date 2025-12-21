@@ -30,11 +30,13 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ISystemAlarmService, SystemAlarmService>();
 		builder.Services.AddSingleton<IForegroundService, AppService>();
 		builder.Services.AddSingleton<ISystemSoundPlayer, SystemSoundPlayer>();
+		builder.Services.AddSingleton<IPermissionHelper, PermissionHelper>();
 #elif WINDOWS
         builder.Services.AddSingleton<ICookieExtractor, CookieExtractor>();
         builder.Services.AddSingleton<ISystemAlarmService, SystemAlarmService>();
         builder.Services.AddSingleton<IForegroundService, AppService>();
         builder.Services.AddSingleton<ISystemSoundPlayer, SystemSoundPlayer>();
+        builder.Services.AddSingleton<IPermissionHelper, PermissionHelper>();
 #endif
 
 #if DEBUG
@@ -45,6 +47,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<MainPage>();
 		builder.Services.AddSingleton<CalendarService>();
 		builder.Services.AddSingleton<AlarmService>();
+		builder.Services.AddSingleton<IEventStorage, EventStorage>();
 
 		return builder.Build();
 	}

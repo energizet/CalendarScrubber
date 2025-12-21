@@ -12,9 +12,9 @@ public class SystemAlarmService : ISystemAlarmService
     }
 
     // Метод отмены будильника
-    public void CancelAlarm(CalendarView ev)
+    public void CancelAlarm(string eventId)
     {
-        System.Diagnostics.Debug.WriteLine($"[Windows Stub] Alarm cancelled (ID: {ev.ItemId.Id})");
+        System.Diagnostics.Debug.WriteLine($"[Windows Stub] Alarm cancelled (ID: {eventId})");
     }
     
     public void CancelNotification(string eventId)

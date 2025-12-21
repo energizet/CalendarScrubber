@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Android.App;
 using Android.Content;
 using AndroidX.Core.App;
@@ -28,7 +27,7 @@ public class SystemAlarmService : ISystemAlarmService
         
         var intent = new Intent(Application.Context, typeof(AlarmReceiver));
         // Кладем только JSON. ID нам тут нужен только для RequestCode
-        intent.PutExtra("event_json", JsonSerializer.Serialize(ev));
+        intent.PutExtra("event_id", ev.ItemId.Id);
 
         // Генерируем уникальный код из ID, чтобы будильники не перезатирали друг друга
         var requestCode = ev.ItemId.Id.GetHashCode();
@@ -47,11 +46,11 @@ public class SystemAlarmService : ISystemAlarmService
         AppLogger.Log($"Android AlarmManager: установлен ID={ev.ItemId.Id.GetHashCode()}");
     }
 
-    public void CancelAlarm(CalendarView ev)
+    public void CancelAlarm(string eventId)
     {
         var manager = (AlarmManager)Application.Context.GetSystemService(Context.AlarmService)!;
         var intent = new Intent(Application.Context, typeof(AlarmReceiver));
-        var requestCode = ev.ItemId.Id.GetHashCode();
+        var requestCode = eventId.GetHashCode();
         
         var pendingIntent = PendingIntent.GetBroadcast(
             Application.Context, requestCode, intent, 
@@ -63,7 +62,7 @@ public class SystemAlarmService : ISystemAlarmService
             pendingIntent.Cancel();
         }
         
-        AppLogger.Log($"Android AlarmManager: отменен ID={ev.ItemId.Id.GetHashCode()}");
+        AppLogger.Log($"Android AlarmManager: отменен ID={eventId.GetHashCode()}");
     }
     
     public void CancelNotification(string eventId)

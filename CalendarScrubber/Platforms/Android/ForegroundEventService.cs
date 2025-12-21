@@ -10,13 +10,13 @@ using CommunityToolkit.Mvvm.Messaging;
 
 namespace CalendarScrubber;
 
-using CalendarView = Models.CalendarView;
-
 [Service(ForegroundServiceType = ForegroundService.TypeSystemExempted, Exported = false)]
 public class ForegroundEventService : Service
 {
 	private bool _isRunning;
 	private CancellationTokenSource? _cts;
+	private CalendarService? _calendarService;
+	private AlarmService? _alarmService;
 	public bool HasAuthToken { get; set; }
 
 	public override IBinder? OnBind(Intent? intent) => null;
@@ -32,6 +32,9 @@ public class ForegroundEventService : Service
 
 		_isRunning = true;
 		_cts = new();
+		var service = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services;
+		_calendarService = service?.GetService<CalendarService>();
+		_alarmService = service?.GetService<AlarmService>();
 
 		var title = intent?.GetStringExtra("title") ?? "Календарь";
 
@@ -74,25 +77,22 @@ public class ForegroundEventService : Service
 
 	private async Task UpdateAsync()
 	{
-		var services = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services;
-		var calendarService = services?.GetService<CalendarService>();
-		var alarmService = services?.GetService<AlarmService>();
 		try
 		{
 			AppLogger.Log("🔄 Service: Начало цикла проверки...");
 
-			if (calendarService != null && alarmService != null)
+			if (_calendarService != null && _alarmService != null)
 			{
-				await RestoreSession(calendarService);
+				await RestoreSession();
 
-				var events = await calendarService.GetEventsAsync();
+				var events = await _calendarService.GetEventsAsync();
 
 				if (events != null)
 				{
 					AppLogger.Log($"✅ Service: Получено {events.Count} событий.");
 
 					// 2. ОБНОВЛЕНИЕ БУДИЛЬНИКОВ
-					alarmService.ScheduleSystemAlarms(events);
+					_alarmService.ScheduleSystemAlarms(events);
 
 					// 3. ОТПРАВКА ДАННЫХ В UI (если приложение открыто)
 					WeakReferenceMessenger.Default.Send(new EventsUpdatedMessage(events));
@@ -117,7 +117,7 @@ public class ForegroundEventService : Service
 			notificationManager?.Notify(GetHashCode(), notification);
 
 			HasAuthToken = false;
-			calendarService?.UpdateCookies(new());
+			_calendarService?.UpdateCookies(new());
 
 			// 2. ОТПРАВЛЯЕМ СООБЩЕНИЕ В UI (Если приложение открыто)
 			WeakReferenceMessenger.Default.Send(new LoginRequiredMessage());
@@ -128,7 +128,7 @@ public class ForegroundEventService : Service
 		}
 	}
 
-	private async Task RestoreSession(CalendarService calendarService)
+	private async Task RestoreSession()
 	{
 		if (HasAuthToken)
 		{
@@ -150,7 +150,7 @@ public class ForegroundEventService : Service
 
 		if (HasAuthToken)
 		{
-			calendarService.UpdateCookies(savedCookies);
+			_calendarService?.UpdateCookies(savedCookies);
 			AppLogger.Log("Session restored from storage.");
 		}
 	}
@@ -165,7 +165,11 @@ public class ForegroundEventService : Service
 		Notification notification;
 		if (nextEvent != null)
 		{
-			var title = $"Ближайшее: {nextEvent.LocalStart:HH:mm}";
+			var datePrefix = string.IsNullOrEmpty(nextEvent.DisplayDate)
+				? ""
+				: $"{nextEvent.DisplayDate} ";
+
+			var title = $"Ближайшее: {datePrefix}{nextEvent.LocalStart:HH:mm}";
 			notification = CreateNotification(title, nextEvent.DisplaySubject);
 			AppLogger.Log($"🔔 Обновлена шторка: {nextEvent.DisplaySubject}");
 		}

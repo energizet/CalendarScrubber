@@ -1,4 +1,3 @@
-using System.Text.Json;
 using _Microsoft.Android.Resource.Designer;
 using Android.App;
 using Android.Content;
@@ -13,7 +12,10 @@ namespace CalendarScrubber;
 [BroadcastReceiver(Enabled = true, Exported = false)]
 public class AlarmReceiver : BroadcastReceiver
 {
-	public override void OnReceive(Context? context, Intent? intent)
+	private ISystemSoundPlayer? _soundPlayer;
+	private IEventStorage? _eventStorage;
+
+	public override async void OnReceive(Context? context, Intent? intent)
 	{
 		if (context == null || intent == null) return;
 
@@ -23,14 +25,19 @@ public class AlarmReceiver : BroadcastReceiver
 
 		try
 		{
-			var json = intent.GetStringExtra("event_json") ?? "";
-			if (string.IsNullOrEmpty(json)) return;
-			
-			var soundPlayer = Application.Current?.Handler?.MauiContext?.Services.GetService<ISystemSoundPlayer>();
-			soundPlayer?.Play();
+			var id = intent.GetStringExtra("event_id") ?? "";
+			if (string.IsNullOrEmpty(id)) return;
+
+			var service = Application.Current?.Handler?.MauiContext?.Services;
+			_eventStorage ??= service?.GetService<IEventStorage>();
+			var ev =  _eventStorage?.GetEvent(id);
+			if (ev == null) return;
+
+			_soundPlayer ??= service?.GetService<ISystemSoundPlayer>();
+			_soundPlayer?.Play();
 			AppLogger.Log("🎵 Звук запущен");
 
-			ShowNotification(context, json);
+			ShowNotification(context, ev);
 		}
 		finally
 		{
@@ -38,20 +45,17 @@ public class AlarmReceiver : BroadcastReceiver
 		}
 	}
 
-	private void ShowNotification(Context context, string json)
+	private static void ShowNotification(Context context, CalendarView ev)
 	{
-		var ev = JsonSerializer.Deserialize<CalendarView>(json);
-		if (ev == null) return;
-		
 		AppLogger.Log($"⏰ СРАБОТАЛ БУДИЛЬНИК: {ev.Subject}");
-		
+
 		var subject = ev.DisplaySubject;
 		var time = $"{ev.LocalStart:HH:mm}";
 		var notificationId = ev.ItemId.Id.GetHashCode();
 
 		var activityIntent = new Intent(context, typeof(MainActivity));
 		activityIntent.AddFlags(ActivityFlags.NewTask | ActivityFlags.ClearTop);
-		activityIntent.PutExtra("trigger_json", json);
+		activityIntent.PutExtra("trigger_id", ev.ItemId.Id);
 
 		var pendingIntent = PendingIntent.GetActivity(
 			context,
@@ -62,13 +66,13 @@ public class AlarmReceiver : BroadcastReceiver
 		// === Интент для кнопки "СТОП" ===
 		var stopIntent = new Intent(context, typeof(StopAlarmReceiver));
 		stopIntent.PutExtra("notification_id", ev.ItemId.Id);
-        
+
 		var stopPendingIntent = PendingIntent.GetBroadcast(
 			context,
 			notificationId,
 			stopIntent,
 			PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent);
-		
+
 		var channelId = "alarm_critical_channel";
 		CreateNotificationChannel(context, channelId);
 
@@ -94,7 +98,7 @@ public class AlarmReceiver : BroadcastReceiver
 		notificationManager!.Notify(notificationId, notificationBuilder!.Build());
 	}
 
-	private void CreateNotificationChannel(Context context, string channelId)
+	private static void CreateNotificationChannel(Context context, string channelId)
 	{
 		if (context.GetSystemService(Context.NotificationService) is not NotificationManager manager) return;
 

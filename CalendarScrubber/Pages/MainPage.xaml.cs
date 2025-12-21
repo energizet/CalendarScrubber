@@ -13,6 +13,7 @@ public partial class MainPage : ContentPage
 	private readonly AlarmService _alarmService;
 	private readonly IServiceProvider _serviceProvider;
 	private readonly IForegroundService _foregroundService;
+	private readonly IEventStorage _eventStorage;
 
 	public ObservableCollection<AppLog> Logs { get; set; } = [];
 
@@ -28,6 +29,7 @@ public partial class MainPage : ContentPage
 		_calendarService = _serviceProvider.GetRequiredService<CalendarService>();
 		_alarmService = _serviceProvider.GetRequiredService<AlarmService>();
 		_foregroundService = _serviceProvider.GetRequiredService<IForegroundService>();
+		_eventStorage = _serviceProvider.GetRequiredService<IEventStorage>();
 
 		RegisterLog();
 		RegisterUpdate();
@@ -36,7 +38,7 @@ public partial class MainPage : ContentPage
 
 	private async void OnSettingsClicked(object sender, EventArgs e)
 	{
-		await Navigation.PushAsync(new SettingsPage());
+		await Navigation.PushAsync(new SettingsPage(_serviceProvider));
 	}
 
 
@@ -44,7 +46,15 @@ public partial class MainPage : ContentPage
 	{
 		base.OnAppearing();
 
-		_foregroundService.Start("Календарь", "Запуск мониторинга...");
+		var cachedEvents = _eventStorage.GetAllEvents();
+
+		if (cachedEvents.Count > 0)
+		{
+			EventsCollection.ItemsSource = cachedEvents;
+			AppLogger.Log($"📂 Загружено из кэша: {cachedEvents.Count}");
+		}
+
+		await _foregroundService.Start("Календарь", "Запуск мониторинга...");
 	}
 
 	private void LoadDataAsync()
@@ -114,7 +124,7 @@ public partial class MainPage : ContentPage
 	}
 
 	private void OnLoginClicked(object sender, EventArgs e)
-	{ 
+	{
 		LoadDataAsync();
 	}
 

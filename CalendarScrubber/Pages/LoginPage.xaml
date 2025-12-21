@@ -2,16 +2,17 @@
 
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="CalendarScrubber.Pages.LoginPage">
+             x:Class="CalendarScrubber.Pages.LoginPage"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#121212}">
     <Grid>
-        <WebView x:Name="AuthWebView" 
+        <WebView x:Name="AuthWebView"
                  Navigating="OnWebViewNavigating"
-                 Navigated="OnWebViewNavigated"/>
-        
+                 Navigated="OnWebViewNavigated" />
+
         <ActivityIndicator x:Name="LoadingSpinner"
                            IsRunning="False"
                            HorizontalOptions="Center"
                            VerticalOptions="Center"
-                           Color="#512BD4"/>
+                           Color="#512BD4" />
     </Grid>
 </ContentPage>

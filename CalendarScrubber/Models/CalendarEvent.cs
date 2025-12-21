@@ -53,6 +53,21 @@ public class CalendarView
     
 	// 5. Цвет времени (можно сделать чуть ярче, если событие активно)
 	public Color TimeColor => UiColor == Colors.Gray ? Colors.Gray : Color.FromArgb("#512BD4"); // Фиолетовый или серый
+	
+	public string DisplayDate
+	{
+		get
+		{
+			// Если дата события совпадает с сегодняшней - возвращаем пустоту
+			if (LocalStart.Date == DateTime.Now.Date)
+			{
+				return string.Empty;
+			}
+
+			// Иначе возвращаем дату в формате "21 дек" или "21.12"
+			return LocalStart.ToString("d MMM", new System.Globalization.CultureInfo("ru-RU"));
+		}
+	}
 }
 
 public class ItemIdWrapper
