@@ -1,8 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+    <g transform="translate(0, 10)">
+        <rect x="96" y="128" width="320" height="288" rx="20" fill="black" fill-opacity="0.2"/>
+        <path d="M96 148C96 136.954 104.954 128 116 128H396C407.046 128 416 136.954 416 148V192H96V148Z" fill="black" fill-opacity="0.2"/>
+        <rect x="144" y="96" width="32" height="64" rx="16" fill="black" fill-opacity="0.2"/>
+        <rect x="336" y="96" width="32" height="64" rx="16" fill="black" fill-opacity="0.2"/>
+        <path d="M256 224C233.909 224 216 241.909 216 264V296L200 312V320H312V312L296 296V264C296 241.909 278.091 224 256 224Z" fill="black" fill-opacity="0.2"/>
+        <path d="M256 336C264.837 336 272 328.837 272 320H240C240 328.837 247.163 336 256 336Z" fill="black" fill-opacity="0.2"/>
+    </g>
+
     <rect x="96" y="128" width="320" height="288" rx="20" fill="white"/>
 
-    <path d="M96 148C96 136.954 104.954 128 116 128H396C407.046 128 416 136.954 416 148V192H96V148Z" fill="#512BD4"/>
+    <path d="M96 148C96 136.954 104.954 128 116 128H396C407.046 128 416 136.954 416 148V192H96V148Z"
+          fill="#512BD4"
+          stroke="white"
+          stroke-width="6"/>
 
     <rect x="144" y="96" width="32" height="64" rx="16" fill="#D32F2F"/>
     <rect x="336" y="96" width="32" height="64" rx="16" fill="#D32F2F"/>
@@ -13,4 +26,5 @@
 
     <path d="M328 256L344 240" stroke="#D32F2F" stroke-width="12" stroke-linecap="round"/>
     <path d="M184 256L168 240" stroke="#D32F2F" stroke-width="12" stroke-linecap="round"/>
+
 </svg>
