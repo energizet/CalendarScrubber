@@ -3,6 +3,7 @@ using Android.App;
 using Android.Content;
 using Android.OS;
 using AndroidX.Core.App;
+using CalendarScrubber.Extensions;
 using CalendarScrubber.Models;
 using CalendarScrubber.Services;
 using Application = Microsoft.Maui.Controls.Application;
@@ -15,7 +16,7 @@ public class AlarmReceiver : BroadcastReceiver
 	private ISystemSoundPlayer? _soundPlayer;
 	private IEventStorage? _eventStorage;
 
-	public override async void OnReceive(Context? context, Intent? intent)
+	public override void OnReceive(Context? context, Intent? intent)
 	{
 		if (context == null || intent == null) return;
 
@@ -51,7 +52,7 @@ public class AlarmReceiver : BroadcastReceiver
 
 		var subject = ev.DisplaySubject;
 		var time = $"{ev.LocalStart:HH:mm}";
-		var notificationId = ev.ItemId.Id.GetHashCode();
+		var notificationId = ev.ItemId.Id.GetStableHashCode();
 
 		var activityIntent = new Intent(context, typeof(MainActivity));
 		activityIntent.AddFlags(ActivityFlags.NewTask | ActivityFlags.ClearTop);
