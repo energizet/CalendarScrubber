@@ -1,6 +1,7 @@
 using Android.App;
 using Android.Content;
 using AndroidX.Core.App;
+using CalendarScrubber.Extensions;
 using CalendarScrubber.Models;
 using CalendarScrubber.Services;
 using Application = Android.App.Application;
@@ -30,7 +31,7 @@ public class SystemAlarmService : ISystemAlarmService
         intent.PutExtra("event_id", ev.ItemId.Id);
 
         // Генерируем уникальный код из ID, чтобы будильники не перезатирали друг друга
-        var requestCode = ev.ItemId.Id.GetHashCode();
+        var requestCode = ev.ItemId.Id.GetStableHashCode();
 
         var pendingIntent = PendingIntent.GetBroadcast(
             Application.Context, 
@@ -43,14 +44,14 @@ public class SystemAlarmService : ISystemAlarmService
         var alarmClockInfo = new AlarmManager.AlarmClockInfo(calendar.TimeInMillis, pendingIntent);
         manager.SetAlarmClock(alarmClockInfo, pendingIntent);
         
-        AppLogger.Log($"Android AlarmManager: установлен ID={ev.ItemId.Id.GetHashCode()}");
+        AppLogger.Log($"Android AlarmManager: установлен ID={requestCode}");
     }
 
     public void CancelAlarm(string eventId)
     {
         var manager = (AlarmManager)Application.Context.GetSystemService(Context.AlarmService)!;
         var intent = new Intent(Application.Context, typeof(AlarmReceiver));
-        var requestCode = eventId.GetHashCode();
+        var requestCode = eventId.GetStableHashCode();
         
         var pendingIntent = PendingIntent.GetBroadcast(
             Application.Context, requestCode, intent, 
@@ -62,17 +63,17 @@ public class SystemAlarmService : ISystemAlarmService
             pendingIntent.Cancel();
         }
         
-        AppLogger.Log($"Android AlarmManager: отменен ID={eventId.GetHashCode()}");
+        AppLogger.Log($"Android AlarmManager: отменен ID={requestCode}");
     }
     
     public void CancelNotification(string eventId)
     {
         // Вычисляем тот же ID, что и при создании уведомления
-        var notificationId = eventId.GetHashCode();
+        var notificationId = eventId.GetStableHashCode();
 
         var manager = NotificationManagerCompat.From(Application.Context);
         manager?.Cancel(notificationId);
         
-        AppLogger.Log($"Уведомление убрано для {eventId.GetHashCode()}");
+        AppLogger.Log($"Уведомление убрано для {notificationId}");
     }
 }

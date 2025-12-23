@@ -1,5 +1,4 @@
 using Android.Content;
-using Android.Provider;
 using CalendarScrubber.Services;
 using Plugin.LocalNotification;
 using Application = Android.App.Application;

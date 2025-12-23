@@ -3,7 +3,6 @@ using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
-using CalendarScrubber.Models;
 using CalendarScrubber.Services;
 
 namespace CalendarScrubber;
@@ -23,11 +22,11 @@ public class MainActivity : MauiAppCompatActivity
 		var service = Microsoft.Maui.Controls.Application.Current?.Handler?.MauiContext?.Services;
 		_eventStorage = service?.GetService<IEventStorage>();
 	}
-	
-	protected override async void OnResume()
+
+	protected override void OnResume()
 	{
 		base.OnResume();
-		await ProcessIncomingIntent(NewIntent);
+		ProcessIncomingIntent();
 	}
 
 	protected override void OnNewIntent(Intent? intent)
@@ -37,14 +36,14 @@ public class MainActivity : MauiAppCompatActivity
 		NewIntent = intent;
 	}
 
-	private async Task ProcessIncomingIntent(Intent? intent)
+	private void ProcessIncomingIntent()
 	{
 		TurnOnScreen();
 
-		if (intent != null && intent.HasExtra("trigger_id"))
+		if (NewIntent != null && NewIntent.HasExtra("trigger_id"))
 		{
-			var id = intent.GetStringExtra("trigger_id");
-			
+			var id = NewIntent.GetStringExtra("trigger_id");
+
 			AppLogger.Log("🎯 MainActivity: Найден ключ 'trigger_id'. Обработка...");
 
 			if (!string.IsNullOrEmpty(id))
@@ -57,7 +56,7 @@ public class MainActivity : MauiAppCompatActivity
 					if (eventData != null)
 					{
 						AppLogger.Log($"🚀 Открытие AlarmPage для: {eventData.Subject}");
-						
+
 						MainThread.BeginInvokeOnMainThread(() =>
 						{
 							Shell.Current?.Navigation.PushModalAsync(new Pages.AlarmPage(eventData));
