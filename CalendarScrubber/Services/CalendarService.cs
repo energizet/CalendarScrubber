@@ -61,16 +61,40 @@ public class CalendarService
 			var endParam = WebUtility.UrlEncode(endUtc.ToString(format));
 
 			var url = $"{AppConfig.CalendarEndpoint}?start={startParam}&end={endParam}";
-			
-			AppLogger.Log($"🌍 Запрос данных: {url}");
 
-			var response = await _httpClient.GetAsync(url);
-			
-			AppLogger.Log($"📡 Ответ сервера: {response.StatusCode}");
+			HttpResponseMessage response;
+			while (true)
+			{
+				AppLogger.Log($"🌍 Запрос данных: {url}");
+
+				response = await _httpClient.GetAsync(url);
+
+				AppLogger.Log($"📡 Ответ сервера: {response.StatusCode}");
+
+				if (
+					response.StatusCode is
+					HttpStatusCode.MovedPermanently or
+					HttpStatusCode.Redirect or
+					HttpStatusCode.TemporaryRedirect or
+					HttpStatusCode.PermanentRedirect
+				)
+				{
+					var redirectUrl = response.Headers.Location;
+					AppLogger.Log($"🔀 Обнаружен редирект. Location: {redirectUrl}");
+
+					url = redirectUrl?.ToString();
+					continue;
+				}
+
+				break;
+			}
 
 			// ГЛАВНОЕ ИЗМЕНЕНИЕ: Проверка статуса
-			if (response.StatusCode == HttpStatusCode.Unauthorized ||
-			    response.StatusCode == HttpStatusCode.Forbidden)
+			if (
+				response.StatusCode is
+				HttpStatusCode.Unauthorized or
+				HttpStatusCode.Forbidden
+			)
 			{
 				AppLogger.Log("❌ Ошибка авторизации (401/403)");
 				// Выбрасываем специальное исключение, которое поймает MainPage
@@ -86,6 +110,7 @@ public class CalendarService
 				AppLogger.Log($"✅ Найдено событий: {result?.Views.Count ?? 0}");
 				return result?.Views ?? [];
 			}
+
 			AppLogger.Log($"⚠️ Ошибка сервера: {response.StatusCode}");
 		}
 		catch (HttpRequestException ex)
