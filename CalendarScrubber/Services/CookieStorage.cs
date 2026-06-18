@@ -50,6 +50,18 @@ public static class CookieStorage
 		}
 	}
 
+	// === ОБНОВЛЕНИЕ ===
+	public static async Task UpdateCookie(CookieContainer newCookies, string url)
+	{
+		var container = await LoadCookies();
+		var uri = new Uri(url);
+		foreach (Cookie cookie in newCookies.GetCookies(uri))
+		{
+			container.Add(cookie);
+		}
+		await SaveCookies(container, url);
+	}
+
 	// === ЗАГРУЗКА ===
 	public static async Task<CookieContainer> LoadCookies()
 	{

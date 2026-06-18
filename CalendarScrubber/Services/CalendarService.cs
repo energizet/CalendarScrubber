@@ -8,6 +8,7 @@ namespace CalendarScrubber.Services;
 public class CalendarService
 {
 	private HttpClient _httpClient;
+	private readonly ICookieExtractor _cookieExtractor;
 
 // Опции для десериализации (создаем один раз для оптимизации)
 	private readonly JsonSerializerOptions _jsonOptions = new()
@@ -15,8 +16,10 @@ public class CalendarService
 		PropertyNameCaseInsensitive = true // Игнорировать регистр (itemId == ItemId)
 	};
 
-	public CalendarService()
+	public CalendarService(ICookieExtractor cookieExtractor)
 	{
+		_cookieExtractor = cookieExtractor;
+
 		// Инициализируем клиент сразу, даже без кук
 		// BaseDomain берем из конфига
 		_httpClient = new()
@@ -81,6 +84,17 @@ public class CalendarService
 				{
 					var redirectUrl = response.Headers.Location;
 					AppLogger.Log($"🔀 Обнаружен редирект. Location: {redirectUrl}");
+
+					// Если пришел новый токен в куках - обновляем их
+					if (response.Headers.TryGetValues("Set-Cookie", out var setCookies))
+					{
+						var newCookies = _cookieExtractor.ParseSetCookieHeader(AppConfig.BaseDomain, setCookies);
+						await CookieStorage.UpdateCookie(newCookies, AppConfig.BaseDomain);
+
+						var updatedContainer = await CookieStorage.LoadCookies();
+						UpdateCookies(updatedContainer);
+						AppLogger.Log("✅ Куки успешно обновлены после редиректа.");
+					}
 
 					url = redirectUrl?.ToString();
 					continue;

@@ -11,33 +11,38 @@ public class CookieExtractor : ICookieExtractor
 	{
 		var container = new CookieContainer();
 		var cookieManager = CookieManager.Instance!;
-        
+
 		// Синхронизация
 		cookieManager.Flush();
-        
+
 		// Получаем строку
 		var cookieString = cookieManager.GetCookie(url);
 
-		if (string.IsNullOrEmpty(cookieString)) 
+		if (string.IsNullOrEmpty(cookieString))
 			return Task.FromResult(container);
 
-		// Парсинг строки (Android specific logic)
-		// Привязываем куки к хосту, чтобы HttpClient их подхватил
+		container = ParseSetCookieHeader(url, cookieString.Split(';'));
+
+		return Task.FromResult(container);
+	}
+
+	public CookieContainer ParseSetCookieHeader(string url, IEnumerable<string> setCookieHeaders)
+	{
 		var uri = new Uri(url);
-		// Обычно для API нужен BaseDomain, но тут берем хост из URL
-		// (или можно внедрить AppConfig сюда же, но лучше передать url параметром)
-        
-		var pairs = cookieString.Split(';');
-		foreach (var pair in pairs)
+		var container = new CookieContainer();
+
+		foreach (var header in setCookieHeaders)
 		{
-			var parts = pair.Trim().Split('=');
+			// Берем первую часть (имя=значение) до первого ';'
+			var firstPart = header.Split(';')[0];
+			var parts = firstPart.Trim().Split('=');
 			if (parts.Length >= 2)
 			{
 				var key = parts[0].Trim();
 				// Берем всё после первого равно как значение
-				var val = pair.Trim().Substring(key.Length + 1);
+				var val = firstPart.Trim().Substring(key.Length + 1);
 
-				try 
+				try
 				{
 					// Важно: Path = "/" и Domain = uri.Host
 					container.Add(new Cookie(key, val, "/", uri.Host));
@@ -46,6 +51,6 @@ public class CookieExtractor : ICookieExtractor
 			}
 		}
 
-		return Task.FromResult(container);
+		return container;
 	}
 }

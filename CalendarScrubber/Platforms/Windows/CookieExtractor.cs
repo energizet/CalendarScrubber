@@ -35,4 +35,32 @@ public class CookieExtractor : ICookieExtractor
 
 		return container;
 	}
+
+	public CookieContainer ParseSetCookieHeader(string url, IEnumerable<string> setCookieHeaders)
+	{
+		var uri = new Uri(url);
+		var container = new CookieContainer();
+
+		foreach (var header in setCookieHeaders)
+		{
+			// Берем первую часть (имя=значение) до первого ';'
+			var firstPart = header.Split(';')[0];
+			var parts = firstPart.Trim().Split('=');
+			if (parts.Length >= 2)
+			{
+				var key = parts[0].Trim();
+				// Берем всё после первого равно как значение
+				var val = firstPart.Trim().Substring(key.Length + 1);
+
+				try
+				{
+					// Важно: Path = "/" и Domain = uri.Host
+					container.Add(new Cookie(key, val, "/", uri.Host));
+				}
+				catch { /* игнорируем битые куки */ }
+			}
+		}
+
+		return container;
+	}
 }
